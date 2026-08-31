@@ -2,7 +2,27 @@
 
 All notable changes to this plugin are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
-versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+versioning is calendar-based (`YYYY.M.D`), matching the skill's own dated version
+string rather than imposing a semantic version it does not have.
+
+## [2026.8.22] - 2026-08-31
+
+### Changed
+- Version realigned to match the skill's own declared version (v2026-08-22). The initial
+  publication used a placeholder 1.0.0.
+- README expanded substantially: worked examples with sample output, configuration,
+  troubleshooting, limitations, and design rationale.
+- Added a model-support section (developed on Opus 5, model-agnostic across tiers),
+  a best-practices section, and full source attribution for the design.
+
+### Added
+- Citations for the four sources the design draws on: DSPy signatures (arXiv:2310.03714),
+  principled instructions (arXiv:2312.16171), STORM perspective-guided question asking
+  (arXiv:2402.14207), and Anthropic's Prompting 101. Each identifier verified against
+  arXiv before publication.
+- An explicit note on what was deliberately not imported: scored iteration, including
+  GEPA (arXiv:2507.19457, ICLR 2026), which needs an eval harness this skill lacks.
+
 
 ## [1.0.0] - 2026-08-31
 
