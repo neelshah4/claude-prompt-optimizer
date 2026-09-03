@@ -12,24 +12,24 @@ the single question should sharpen output direction, not re-ask
 already-specified content.
 
 **Perspective-guided questions (STORM technique).** When a framing/emphasis
-question is warranted — especially the score-13+ Document *content-extending*
-question — make it **perspective-guided**: surface 2–4 concrete, task-relevant
+question is warranted, especially the score-13+ Document *content-extending*
+question, make it **perspective-guided**: surface 2–4 concrete, task-relevant
 perspectives / stakeholders / reviewer-lenses as the options rather than a vague
 "what's the emphasis?" (e.g., reviewer lens in Example 3: Methods skeptic /
 Clinical pragmatist / Statistics reviewer / ML reviewer; for an exec memo:
 CFO / ops lead / skeptical board member; for a teaching deck: novice learner /
-expert peer / cross-specialty). This borrows STORM's core move — discover the
-distinct angles a deliverable must satisfy, then ask from those angles — and
+expert peer / cross-specialty). This borrows STORM's core move, discovering the
+distinct angles a deliverable must satisfy and asking from those angles, and
 yields sharper output direction than an open prompt. **Bounded by Economy:** it
-*replaces* the framing question's options with concrete lenses; it does NOT add
+*replaces* the framing question's options with concrete lenses; it does not add
 questions beyond the channel × score matrix.
 
 **How to read the banks below.** Every task type is scored on the same five
 dimensions (Phase 0.C: Goal / Format / Audience / Constraints / Context). Ask the
 weakest (1–2) dimensions first. The banks give only the **task-specific options**
-for each dimension — the dimension names and scoring are the Phase 0.C rubric,
-not repeated here. Rows marked *(doc only)* are the extra 4th/5th question a
-Document task can spend when its score is low.
+for each dimension, not the dimension names and scoring, which are the Phase
+0.C rubric and not repeated here. Rows marked *(doc only)* are the extra
+4th/5th question a Document task can spend when its score is low.
 
 | Task type | Goal | Format | Audience / Context | Constraints | *(doc-only) 5th* |
 |-----------|------|--------|--------------------|-------------|------------------|

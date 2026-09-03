@@ -5,6 +5,22 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning is calendar-based (`YYYY.M.D`), matching the skill's own dated version
 string rather than imposing a semantic version it does not have.
 
+## [2026.9.3] - 2026-09-03
+
+### Changed
+- Prose rewritten for direct statement (Anthropic Fable 5.1 guidance): metaphor replaced with the literal phrase, em dashes replaced with periods, semicolons, or commas, emphasis reduced. No trigger, Skip, or schema change.
+- Header edit history and the design note moved to references/versions.md; the SKILL.md header now carries only the live maintenance contract.
+- Constraints section removed (every item was restated in Rules); three Gotchas rows that restated a Rules item removed.
+- Setup-Recommender gate moved verbatim to references/setup-recommender.md, with a summary and a read-before-firing pointer left in SKILL.md.
+- Public-copy scrub: references to a private, unpublished skill replaced with the generic name grant-review.
+
+### Added
+- Rule 10: on WRITING, COMMUNICATION, and DOCUMENT tasks the generated <instructions> carry the line "Remove all mannered prose: say what you mean, and use the literal phrase where one exists."
+- references/setup-recommender.md.
+
+### Unchanged
+- Skip list, the <optimized_prompt> schema, and both hooks are unchanged from 2026.8.22.
+
 ## [2026.8.22] - 2026-08-31
 
 ### Changed
@@ -28,17 +44,3 @@ string rather than imposing a semantic version it does not have.
 
 ### Added
 - Initial public release as a Claude Code plugin.
-- `UserPromptSubmit` and `Stop` hooks now ship with the plugin and wire automatically
-  via `hooks/hooks.json`, so the skip-list contract holds on install.
-
-### Changed
-- Description trimmed to 983 characters to stay under the 1024-character skill limit.
-- Removed the local-install maintenance header and all internal path references.
-
-### Prior history
-Developed privately from 2026-06 through 2026-08. Notable milestones, preserved in
-`skills/prompt-optimizer/references/versions.md`: the refine engine and firing upgrade
-(2026-06-07), a precision pass driven by a 70-case adversarial eval (2026-06-07b), the
-STORM best-practices pass (2026-06-26), the flagship research-grade pass (2026-07-03),
-conversion enforcement with the Stop hook (2026-07-12), and the completion-discipline
-merge (2026-08-22).
