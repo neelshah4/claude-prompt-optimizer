@@ -1,6 +1,6 @@
 {
   "name": "prompt-optimizer",
-  "version": "2026.9.3",
+  "version": "2026.9.8",
   "description": "Sharpens a request into a structured 5-element prompt before Claude produces content. Fires on substantive turns, skips trivia, and ships the enforcement hooks.",
   "author": {
     "name": "Neel Shah, MD, MSc"

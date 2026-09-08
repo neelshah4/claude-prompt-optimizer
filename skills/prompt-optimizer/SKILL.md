@@ -15,32 +15,18 @@ description: >-
   continuations or edits (resume, continue, check it, make the Nth shorter),
   though a continuation adding new work fires; or a block longer than the
   answer. Emits a 5-element prompt block on the first response per task.
-lastReviewed: 2026-09-03
+lastReviewed: 2026-09-08
 ---
-
 # Prompt Optimizer
 
-<!-- prompt-optimizer v2026-09-03 (LANGUAGE PASS + mannered-prose line; prior v2026-08-22).
-     Canonical in public fork.
-     Propagation: Code reads canonical natively; Cowork, the .claude-science org store, and
-     chat are re-synced snapshots (not live symlinks; verify with shasum after edits).
-     MAINTENANCE: the Skip categories below are mirrored in the UserPromptSubmit hook
-     ~/.claude/hooks/prompt-optimizer-nudge.sh. If a Skip category changes, update the hook's
-     additionalContext in the SAME change set. The same-change-set contract is now THREE-WAY:
-     this SKILL.md Skip list, the UserPromptSubmit nudge hook prompt-optimizer-nudge.sh, and the
-     new Stop hook prompt-optimizer-stop-check.sh must move together whenever the Skip/fire
-     semantics change.
-     Pre-filter gate (2026-07-09): the hook ALSO pre-filters before printing. It silently
-     suppresses injection only on high-confidence trivial prompts (pure greetings, bare acks,
-     bare yes/no, tightly-anchored status/verification checks, and single deterministic
-     commands), and injects on everything else. This pre-filter is a strict, conservative
-     SUBSET of the Skip categories above; it does not implement single-fact lookups, bare
-     definitions, in-prompt continuations, or block-would-exceed-answer, which stay enforced
-     by this skill in-context, not the hook. If the pre-filter regex changes, keep it a subset
-     and update this note. False negatives (failing to inject on a real task) are worse than
-     false positives.
+<!-- Canonical in public fork. Propagation: Code reads this file
+     natively; Cowork, the .claude-science org store, and chat hold re-synced snapshots
+     verified by shasum, not live symlinks.
+     THREE-WAY SYNC: the Skip categories and Trigger patterns below are mirrored in
+     hooks/prompt-optimizer-nudge.sh (UserPromptSubmit) and
+     hooks/prompt-optimizer-stop-check.sh (Stop). Update both hooks in the same
+     change set whenever Skip/fire semantics change.
      Edit history and design rationale: references/versions.md. -->
-
 
 Sharpen the user's request through structured refinement before execution.
 
@@ -50,7 +36,7 @@ Display the optimized prompt at the top of the **first substantive response**
 for each new task. Skip on follow-up edits, clarifications, and continuations
 within the same task.
 
-The output is a 5-element XML block that mirrors Anthropic's Prompting 101
+The output is a 5-element XML block mirroring Anthropic's Prompting 101
 structure (task description → dynamic content → detailed instructions →
 optional examples → reminder of critical points):
 
@@ -91,7 +77,6 @@ bloating a short reply.
 ## Trigger Rules
 
 ### Trigger
-<!-- >1-sentence threshold (user override 2026-05-29). Fires aggressively on anything past a single sentence. -->
 
 These conditions are independent; fire if any one holds, but only when the
 prompt carries a **task to optimize** (production, reasoning, or synthesis). The
@@ -109,24 +94,18 @@ task does not fire (see Skip → status checks, deterministic commands).
 
 #### High-value fire patterns (these FIRE)
 
-Five measured miss clusters that look skippable but carry a task:
-
-1. **Attachment-led** (`@file …`). The attachment is `<inputs>`; the surrounding
-   ask is the task. A bare attachment with a single clause is still a task.
-2. **Pasted-plan / persona** ("# Plan — …", "you are a senior engineer…"). The
-   plan or persona is context; the task is to execute or critique it. These are the
-   highest-value fires.
-3. **Meta / skill-and-agent-engineering.** This covers editing skills, hooks,
-   agents, workflows, or CLAUDE.md. Content production about the system is still
-   content production.
-4. **Dense clinical consults.** Fire via the icu-clinical-consult handoff;
-   synthesize the block from the specialist's intake even when the specialist runs
-   first. A missed block here usually means the specialist was missed too.
-5. **Short-but-substantive** ("give me a 1-sentence hypothesis and where to put it
-   in the aims"). Length is necessary-not-sufficient in BOTH directions; short does
-   not mean skip when the ask produces content.
-
-> These patterns resolve the "looks skippable but isn't" cases toward FIRING. Skip precedence is unchanged: if a Skip category matches, it still wins. A bare deterministic command or a status check on an attached file still skips (an attachment is not a task by itself); a one-word continuation still skips. High-value patterns resolve ambiguous cases as firing; they do not override the Skip list.
+Five measured miss clusters that look skippable but carry a task, and resolve
+toward FIRING: **attachment-led** (`@file …`, the attachment is `<inputs>` and
+the surrounding ask is the task, even a single clause); **pasted-plan /
+persona** ("# Plan — …", "you are a senior engineer…", the plan/persona is
+context and the task is to execute or critique it, the highest-value fire);
+**meta / skill-and-agent-engineering** (editing skills, hooks, agents,
+workflows, CLAUDE.md is content production about the system); **dense
+clinical consults** (fire via the icu-clinical-consult handoff and synthesize
+from its intake even when the specialist runs first); and **short-but-
+substantive** asks (length is necessary-not-sufficient in both directions).
+Skip precedence is unchanged: a bare deterministic command or a status check
+on an attached file still skips, and a one-word continuation still skips.
 
 ### Skip
 
@@ -153,23 +132,19 @@ category is otherwise narrow; borderline-substantive prompts fire.
   with a content-production clause, fire on that clause only.
 - A **background-task event with no human instruction in it**, such as a
   `<task-notification>`, a `[SYSTEM NOTIFICATION - NOT USER INPUT]` payload, a
-  Monitor event, or a returning agent's result. These arrive on the user channel
-  but nobody spoke, so there is no request to optimize and the next turn is a
-  continuation of work already scoped. This is a **SACRED hard skip**: it survives
-  the fire-when-uncertain tiebreaker, because the tiebreaker compares the cost of
-  a superfluous block to the cost of a missed optimization, and here there is no
-  prompt to miss. Both hooks pre-filter it on the harness-emitted markers (never
-  on text shape, so a human quoting one still fires). If the *user* then replies
-  with new work, that reply fires normally.
-- A **follow-up edit or continuation**, detected by IN-PROMPT signal, anaphora
+  Monitor event, or a returning agent's result: nobody spoke, so there is no
+  request to optimize. This is a **SACRED hard skip** and survives the
+  fire-when-uncertain tiebreaker, because there is no prompt to miss. Both
+  hooks pre-filter it on the harness-emitted markers, never on text shape, so a
+  human quoting one still fires; a *user* reply with new work fires normally.
+- A **follow-up edit or continuation**, detected by IN-PROMPT signal, anaphora,
   or an edit-verb referencing prior work without restating the task: resume,
   continue, also do, now make it, "the [artifact] you built," update the files,
-  "still slide X," "check it," "make the Nth shorter." Skips even if >1 sentence.
-  (Keyed on observable words, not on session state the skill cannot verify.)
-  **Carve-out: a continuation that introduces NEW substantive work FIRES**,
-  "update the files with the following [new scope/content]…", "resume — and now
-  also draft the discussion" get a fresh block for the new work; pure micro-edits
-  ("make the third bullet shorter") still skip.
+  "still slide X," "check it," "make the Nth shorter." Skips even if >1
+  sentence (keyed on observable words, not on session state the skill cannot
+  verify). **Carve-out: a continuation introducing NEW substantive work
+  FIRES** ("resume — and now also draft the discussion" gets a fresh block);
+  pure micro-edits ("make the third bullet shorter") still skip.
 - **Block-would-exceed-answer.** If the optimized block would run longer than the
   answer itself, the ask is trivial; skip the block (and usually the skill). This
   is the trivial-Chat guard: a one-line reply does not need a five-element frame.
@@ -179,9 +154,9 @@ be either substantive or trivial, treat it as substantive and FIRE. This is the
 user's explicit standing preference. A superfluous block costs a few lines; a
 missed block costs the whole optimization. Only the SACRED hard skips survive
 ambiguity: pure greeting, bare ack, bare yes/no, pure status check, single
-deterministic command, background-task event, and pure continuation. The soft categories (single-fact
-lookup, bare definition, block-would-exceed-answer) still exist but lose every
-tie. The measured register below governs behavior once it fires.
+deterministic command, background-task event, and pure continuation. The soft
+categories (single-fact lookup, bare definition, block-would-exceed-answer)
+still exist but lose every tie.
 
 ## Core Workflow
 
@@ -214,7 +189,7 @@ User prompt arrives
 WRITING, COMMUNICATION, and DOCUMENT tasks carry the mannered-prose line in
 `<instructions>` (see Refine).
 
-**Handoff protocol**: If the task activates another skill with its own intake or
+**Handoff protocol**: if the task activates another skill with its own intake or
 required pre-step, that skill runs first; prompt-optimizer then displays a
 synthesized `<optimized_prompt>` block from the collected inputs. No
 double-intake. Route by this selector:
@@ -232,32 +207,25 @@ double-intake. Route by this selector:
 When "review" is ambiguous (grant vs manuscript), pick by the artifact named:
 aims page → grant-review; abstract/results/figures → manuscript-reviewer.
 
-**STORM-shaped task → `deep-research` (route-when / don't-route).** `deep-research`
-is the bundled research harness (fan-out web search → fetch → adversarially verify →
-cited report); it is the local analog of Stanford's STORM, which is best suited to
-*pre-writing a grounded survey of a topic from scratch*, not finishing the user's own
-content.
-- **Route when all hold:** the deliverable is a broad report/survey on a *topic* (not
-  the user's own draft/data); it needs grounding across *many external sources discovered
-  from scratch*; the required breadth exceeds the content the user supplied; multi-source
-  synthesis is the point.
-- **Do not route when ANY holds:** the user supplies the content/data/draft (their
-  manuscript, their dataset, their numbers); a single-source or single-fact lookup;
-  opinion / taste / recommendation with no source-synthesis; the task is already owned by
-  a specialist above (grant-review, manuscript-reviewer, icu-clinical-consult); a short
-  answer; or the user explicitly wants Claude's own reasoning, not a web survey.
-- **No double-intake:** `deep-research` runs its own 2–3 clarifying questions when the
-  topic is underspecified, so prompt-optimizer defers intake to it and synthesizes the
-  block from the refined question, the same pattern as grant-review / manuscript-reviewer.
-- **CHECK IT EXISTS BEFORE ROUTING.** As of 2026-07-26 no `deep-research` skill is
-  installed on this surface. The only copy on disk is an uninstalled legal-plugin skill,
-  so this branch pointed at nothing and a STORM-shaped ask silently fell through it.
-  Confirm the skill is in the available-skills list first. If it is not, do the work
-  inline instead of naming a skill that will not load: run the fan-out yourself (parallel
-  web searches across distinct angles → fetch the primary sources → verify each claim
-  against what you actually fetched → cite only fetched sources), ask the 2–3 scoping
-  questions yourself, and hold the same no-fabrication bar. Never tell the user a skill
-  is handling it when no skill exists.
+**STORM-shaped task → `deep-research` (route-when / don't-route).** `deep-research`,
+the local analog of Stanford's STORM (fan-out search → fetch → verify → cited
+report), suits pre-writing a grounded survey of a topic from scratch, never
+finishing the user's own content. **Route when all hold:** broad topic
+survey, not the user's draft/data; grounding needed across many sources
+discovered from scratch; breadth exceeds what the user supplied;
+multi-source synthesis is the point. **Do not route when any holds:** user
+supplies the content/data; single-fact lookup; opinion/taste with no
+synthesis; a specialist above owns it; a short answer; or the user wants
+Claude's own reasoning. **No double-intake:** it self-asks its own 2-3
+clarifying questions, so prompt-optimizer defers intake and synthesizes the
+block from the refined question. **CHECK IT EXISTS BEFORE ROUTING.** No
+`deep-research` skill is installed on this surface (only an uninstalled
+legal-plugin copy exists); confirm it is in the available-skills list before
+naming it. If absent, do the work inline: run the fan-out yourself (parallel
+searches, fetch primaries, verify each claim against what was fetched, cite
+only fetched sources), ask the scoping questions yourself, hold the same
+no-fabrication bar, and never tell the user a skill is handling it when none
+exists.
 
 #### B. Classify Output Channel
 
@@ -294,14 +262,11 @@ catch any under-asking.
 - Score 10 → 50% uncertainty
 - Score 5 → 100% uncertainty
 
-**Memory inference penalty**: If a dimension scored 2 or 3 relies on memory
-of past chats rather than on the current prompt, downgrade it (3→2, 2→1).
-Rationale: the user may be starting something new, and memory-based
-assumptions risk over-confident intake. Only information explicit in the
-current prompt counts at full value.
-
-<!-- Memory penalty kept strict per 2026-05-19 audit (Q9). Do not relax even when the user appears to be continuing prior work; let the user signal continuation explicitly. -->
-
+**Memory inference penalty**: if a dimension scored 2 or 3 relies on memory of
+past chats rather than the current prompt, downgrade it (3→2, 2→1), kept strict
+even when the user appears to be continuing prior work; the user may be
+starting something new, and memory-based assumptions risk over-confident
+intake. Only information explicit in the current prompt earns full credit.
 
 #### D. Determine Question Count
 
@@ -320,7 +285,7 @@ Apply the **channel × score** matrix:
 The prompt is already specified, so the question sharpens output direction
 rather than re-asking what the user already supplied.
 
-**Uncertainty override loop**: After the initial batch, recompute the score
+**Uncertainty override loop**: after the initial batch, recompute the score
 using the answers. If uncertainty remains >20% (score <13), ask a follow-up
 batch in the next turn before proceeding. Continue until uncertainty drops
 below 20% or the user signals override. For document-producing work, it's
@@ -329,10 +294,10 @@ cheaper to ask now than to regenerate later.
 **User override (always wins)**: "just do it," "just give me," "just
 list/show," "stop asking," "you decide," "proceed," "go ahead," "autonomously,"
 "keep going," or similar end the intake loop. A user-specified question count
-overrides the matrix in BOTH directions. "Ask me 5–10," "quiz me" RAISE the cap;
-"just"-class LOWER it to 0 Q. Note: a "just give me X" caps questions at 0 but
-does **not** by itself suppress firing; the skill still fires and shows the
-block; it just proceeds without a clarifying question.
+overrides the matrix in both directions. "Ask me 5–10," "quiz me" raise the
+cap; "just"-class lower it to 0 Q. A "just give me X" caps questions at 0 but
+does not by itself suppress firing; the skill still fires and shows the block,
+proceeding without a clarifying question.
 
 #### E. Question Banks by Task Type
 
@@ -369,62 +334,40 @@ The five dimensions:
   through this? Information needed first should appear first; downstream
   steps should reference upstream context, not the reverse.
 
-**Frontier-idiomatic output (applies when drafting the block's `<instructions>` and
-`<role>`):** these are model-agnostic and hold on every current Claude model.
-- **Give the reason, not only the request.** When it sharpens direction, name who the
-  deliverable is for and what it enables, then state the task. Claude connects the work
-  to the right context instead of inferring it.
-- **Lead with the outcome.** Order instructions so the most important constraint and the
-  end state come first; supporting detail follows.
-- **Enumerate sparingly.** A strong single instruction beats a long "don't do X, don't
-  do Y" list; keep only the constraints that each add something distinct (this is the
-  Economy dimension applied to the generated prompt, not just to this skill's prose).
-- **Let thinking carry the reasoning.** Do not instruct the target to "explain your
-  reasoning in the response"; it bloats output and can trip a refusal.
-- **Decompose at natural joints.** A step that hides two deliverables is under-split;
-  steps smaller than a real unit of work mean the split went one layer too deep. Depth
-  follows the task's joints; it is never adjusted to signal more effort.
-- **Prefer the cheap reversible action to a prediction about it.** When the target could
-  run the check, open the file, or read the value, write the step as that action and its
-  observation, not as reasoning about what the result would probably be.
-- **Remove all mannered prose.** On WRITING, COMMUNICATION, and DOCUMENT tasks, the
-  generated `<instructions>` carry one line: "Remove all mannered prose: say what you
-  mean, and use the literal phrase where one exists." Source: Anthropic's Fable 5.1
-  prompting guidance, which places this instruction in the user message. It is one
-  line, added once, and is exempt from the Economy pass.
-
-**Instruction-writing moves** (the transferable core of the prompt-engineering
-literature, Bsharat et al. "Principled Instructions," arXiv 2312.16171, applied
-one-shot, not as a search): name the audience and its expertise; decompose a
-complex ask into ordered steps; state directives affirmatively (do X, not "don't
-do Y"); assign a role in `<role>`; leave an `<inputs>` slot for any exemplar the
-user should supply rather than inventing one. These sharpen `<role>`/`<instructions>`;
-they never expand the block past what the task needs.
+**Drafting `<role>`/`<instructions>`** (model-agnostic techniques, full rationale
+and sourcing in `references/versions.md`): give the reason, not only the
+request; lead with the outcome (biggest constraint and end state first);
+enumerate sparingly, one strong instruction beating a "don't do X, don't do Y"
+list; let thinking carry the reasoning instead of narrating it; decompose at
+natural joints (a step hiding two deliverables is under-split, one smaller
+than a real unit of work is over-split); prefer the cheap reversible action
+(run the check, open the file, read the value) to a prediction about it; name
+the audience and its expertise; state directives affirmatively; assign a role
+in `<role>`; and leave an `<inputs>` slot for any exemplar rather than
+inventing one. These sharpen the block; they never expand it past what the
+task needs. **Remove all mannered prose.** On WRITING, COMMUNICATION, and
+DOCUMENT tasks, the generated `<instructions>` carry one line: "Remove all
+mannered prose: say what you mean, and use the literal phrase where one
+exists." One line, added once, exempt from the Economy pass.
 
 **Each pass:**
 
-1. **Score** all five dimensions 1–3 (1 = weak, 3 = strong; same rubric as the
-   Phase 0.C gap scale).
+1. **Score** all five dimensions 1–3 (same rubric as Phase 0.C).
 2. **Revise every dimension scoring below 3 in the SAME pass**, not just the
-   single weakest. Fixing weak dimensions together avoids the trade-off where
-   improving one quietly degrades another (e.g., adding Specificity bloats
-   Economy).
-3. **Resolve trade-offs in favor of Alignment.** If strengthening one
-   dimension forces a cost on another, choose the resolution that best serves
-   what the user actually needs; note the tension internally. **Never drop
-   Economy from the same-pass fix.** When expanding Specificity/Completeness
-   depresses Economy, re-tighten Economy in that same pass (fold lists into
-   referenced clauses) instead of deferring it.
-4. **Stop** when ANY holds: (a) all five dimensions score 3; (b) a pass yields
-   no material improvement over the prior version (convergence); (c) 3 passes
-   completed; or (d) **CAPPED, not converged**, a dimension cannot reach 3
-   because the required input is absent from the prompt and inventing it would
-   fabricate. A capped stop is not the same as convergence: it must (1) name the
-   missing input as an explicit `<inputs>` placeholder and (2) raise it as a
-   clarifying question (or fold it into the Document question batch) rather than
-   emit a thin block. Scope this to genuinely-missing input; do not re-ask about
-   content the prompt already answered. Gains plateau fast; a 3rd pass is
-   rarely needed.
+   single weakest; fixing them together avoids one quietly degrading another
+   (adding Specificity bloats Economy).
+3. **Resolve trade-offs in favor of Alignment**, noting the tension
+   internally. **Never drop Economy from the same-pass fix:** if
+   Specificity/Completeness depresses it, re-tighten Economy the same pass
+   (fold lists into referenced clauses) instead of deferring it.
+4. **Stop** when any holds: (a) all five score 3; (b) a pass yields no
+   material improvement (convergence); (c) 3 passes completed; or (d)
+   **CAPPED, not converged**: a dimension cannot reach 3 because the input is
+   absent and inventing it would fabricate. A capped stop must (1) name the
+   missing input as an `<inputs>` placeholder and (2) raise it as a
+   clarifying question, rather than ship a thin block. Scope to
+   genuinely-missing input; gains plateau fast, so a 3rd pass is rarely
+   needed.
 
 The loop runs on every triggered turn (Chat and Document alike). Because it
 stops on convergence, an already-strong prompt resolves in a single pass, so
@@ -433,44 +376,42 @@ final `<optimized_prompt>` block, never the intermediate passes. Commit.
 
 ### Completion Contract
 
-**Content gate, not a trigger.** This decides what goes *inside* an already-fired block.
-It never decides whether prompt-optimizer fires, never suppresses it, and can never
-override a skip-listed prompt. Skip precedence is absolute, and a count word inside a
-status check or a micro-edit changes nothing.
+**Content gate, not a trigger.** This decides what goes *inside* an already-fired
+block. It never decides whether prompt-optimizer fires, never suppresses it, and
+can never override a skip-listed prompt. Skip precedence is absolute.
 
-**Fires when BOTH hold.** (1) **Enumerable.** The ask names or implies a set the
-deliverable must cover completely (an explicit N; *all / every / each / the whole*; a
-sweep, audit, or inventory), or the deliverable will state a count, tally, or percentage
-Claude must **derive** rather than quote. (2) **Silent under-coverage is possible.**
-Multi-file or multi-artifact output, a long autonomous run, or an explicit thoroughness
-cue. **Excluded:** the whole set fits in one short answer; the number bounds the OUTPUT
-rather than the work, a length cap ("500 words") or a quantity to produce ("3 options"),
-as opposed to defining a coverage set the work must sweep ("all 47 files"); or a
-specialist owns coverage via handoff. That distinction is the whole test: an explicit N
-fires only when it names what must be covered, never when it caps what is produced. A thoroughness cue
-raises strictness only. "Resume, and don't be lazy this time" is still a pure
-continuation and still skips.
+**Fires when both hold.** (1) **Enumerable:** the ask names or implies a set the
+deliverable must cover completely (an explicit N; *all / every / each / the whole*;
+a sweep, audit, or inventory), or the deliverable states a count, tally, or
+percentage Claude must **derive** rather than quote. (2) **Silent under-coverage is
+possible:** multi-file/multi-artifact output, a long autonomous run, or a
+thoroughness cue. **Excluded:** the whole set fits in one short answer; the number
+bounds the OUTPUT, not the work (a length cap or a quantity to produce, versus a
+coverage set to sweep, "all 47 files"); or a specialist owns coverage via handoff.
+An explicit N fires only when it names what must be covered, never what is
+produced. A thoroughness cue raises strictness only; "resume, don't be lazy" is
+still a pure continuation.
 
 **What it changes.** One sharpened line, then silence.
 
-1. **The done-condition is the final step.** The last numbered `<instructions>` step
-   IS the countable done-condition, replacing the generic verify step that would
-   otherwise be written: "all 47 files opened, count stated in the closeout," never
-   "verify the output." Add no step where one already exists. It may be promoted into a
-   `<critical>` slot when under-coverage IS the dominant failure mode. This is a
+1. **The done-condition is the final step.** The last numbered `<instructions>`
+   step IS the countable done-condition, replacing the generic verify step:
+   "all 47 files opened, count stated in the closeout," never "verify the
+   output." Add no step where one already exists; may be promoted into
+   `<critical>` when under-coverage is the dominant failure mode, a
    permission, never a mandate.
-2. **Report audit, behavioural, zero output.** Any count, tally, or percentage stated in
-   the deliverable or the closeout is re-measured at report time from the artifact or the
-   tool output, or labeled unverified. Its evidence is stated in the closeout sentence
-   CLAUDE.md already requires. Scope: numbers Claude derived this session; claimed
-   external specifics stay with `fabrication-audit`.
-3. **Deviation disclosure, behavioural, zero output on the happy path.** Full coverage
-   adds nothing. Partial coverage must state what was covered and what was not. Sampling
-   is legitimate; silent sampling is not.
+2. **Report audit, behavioural, zero output.** Any count, tally, or
+   percentage stated in the deliverable or closeout is re-measured at report
+   time from the artifact or tool output, or labeled unverified, evidenced in
+   the closeout sentence CLAUDE.md already requires. Scope: numbers derived
+   this session; external specifics stay with `fabrication-audit`.
+3. **Deviation disclosure, behavioural, zero output on the happy path.**
+   Partial coverage must state what was covered and what was not; sampling is
+   legitimate, silent sampling is not.
 
-**Economy.** The contract adds no standalone boilerplate, only the final step's countable
-wording, which the refine loop must not compress away, and which does not count toward the
-block-would-exceed-answer guard.
+**Economy.** The contract adds no standalone boilerplate, only the final step's
+countable wording, which the refine loop must not compress away and which does not
+count toward the block-would-exceed-answer guard.
 
 Read `references/completion-discipline.md` when the run is long, multi-artifact, or
 orchestrated.
@@ -484,46 +425,33 @@ orchestrated.
 
 ### Goal Handoff (default-on suggestion)
 
-`/goal` is a built-in Claude Code command (≥ 2.1.139) that sets a
-session-scoped completion condition: after every turn, a small/fast model
-checks whether the condition is met from the transcript. If not, Claude
-takes another turn. prompt-optimizer and `/goal` compose; prompt-optimizer
-specifies *what to do*, `/goal` specifies *when to stop*.
+`/goal` is a built-in Claude Code command (≥ 2.1.139) setting a session-scoped
+completion condition: after every turn a small/fast model checks the transcript
+against it, and if unmet, Claude takes another turn. prompt-optimizer specifies
+*what to do*; `/goal` specifies *when to stop*.
 
-> **`/goal` in one line (for readers new to it):** the user types
-> `/goal <measurable end state> — or stop after N turns` and Claude keeps
-> working until a fast evaluator reads that state as met. Example:
-> `/goal every section drafted and under its word cap, or stop after 15 turns`.
+**Suggest only.** Setting a goal starts a loop, so prompt-optimizer only ever
+surfaces a pre-filled, copy-pasteable line in `<suggested_goal>` and lets the
+user opt in. Never run `/goal` on the user's behalf.
 
-**Suggest only.** Setting a goal immediately starts a loop, so
-prompt-optimizer only ever surfaces a pre-filled, copy-pasteable line, in the
-`<suggested_goal>` element, and lets the user opt in
-explicitly. Never run `/goal` on the user's behalf.
-
-**Gate (Document-only, 2026-08-08):** include `<suggested_goal>`
-on **Document / Artifact tasks only**, single-pass included (a one-figure or
-abstract task still gets a pasteable line; the user may still want it verified).
-
-**Chat tasks never get `<suggested_goal>`**, regardless of autonomy signal or
-multi-turn shape. The user knows `/goal` exists; the suggestion was unnecessary.
-(Pre-2026-08-08 this gate also fired on autonomy-signal Chat tasks. The duplicate CTA
-line rendered under the block was removed 2026-08-22. The element carries the
-pasteable line once, and once is enough.)
+**Gate (Document-only):** include `<suggested_goal>` on **Document / Artifact
+tasks only**, single-pass included. **Chat tasks never get it**, regardless of
+autonomy signal or multi-turn shape. The line renders once, in the element,
+and nowhere else.
 
 **Condition-writing rules, always pre-filled and countable:**
-- One measurable end state, filled in concretely (never the literal template token).
-- The `/goal` evaluator is a **small/fast model that CANNOT call tools or read
-  files.** It judges only what Claude has already surfaced in the transcript. So
-  phrase the condition to be transcript-provable: artifact written at a stated
-  path, N sections shown drafted, each section under its word cap, every cited item
-  shown resolving.
-- When "done" is naturally subjective (taste, tone, persuasiveness), substitute
-  transcript-provable proxies rather than dropping the suggestion.
-- Always include a natural-language turn bound inside the condition, "or stop
-  after N turns." There is no `--max-turns` flag; the bound is prose.
+- One measurable end state, filled in concretely, never the literal template token.
+- The evaluator is a **small/fast model that cannot call tools or read files**,
+  so phrase the condition to be transcript-provable: artifact written at a
+  stated path, N sections shown drafted, each under its word cap, every cited
+  item shown resolving.
+- When "done" is subjective (taste, tone, persuasiveness), substitute a
+  transcript-provable proxy rather than dropping the suggestion.
+- Always include a natural-language turn bound, "or stop after N turns"; there
+  is no `--max-turns` flag.
 - ≤ 4,000 chars total.
 - When the Completion Contract fired, the condition inherits its countable
-  done-condition, the same N-of-N, naming the evidence the transcript must show.
+  N-of-N done-condition.
 
 **Format inside `<suggested_goal>`:**
 
@@ -532,19 +460,23 @@ pasteable line once, and once is enough.)
 transcript> — or stop after N turns
 ```
 
-Nothing is rendered under the block. The pre-filled line lives in `<suggested_goal>`
-and nowhere else; if the gate doesn't fire (any Chat-channel task), omit the element
-rather than leaving it empty.
+The pre-filled line lives in `<suggested_goal>` and nowhere else; if the gate
+doesn't fire (any Chat-channel task), omit the element rather than leaving it empty.
 
 ### Setup-Recommender Handoff (large projects only)
 
-Fires only on a CODE or repo-rooted ANALYSIS task in a large, ongoing codebase (git repo with a manifest and more than 50 source files, or multi-week / team / onboarding signals), once per repo per session, and never when the user has opted out. Read `references/setup-recommender.md` for the full four-condition gate and the exact announcement line before firing; then invoke `claude-code-setup:claude-automation-recommender` via the Skill tool after the `<optimized_prompt>` block and continue the original task. When the gate does not fire, say nothing.
+Fires only on a CODE or repo-rooted ANALYSIS task in a large, ongoing codebase
+(git repo with a manifest and >50 source files, or multi-week/team/onboarding
+signals), once per repo per session, never when opted out. Read
+`references/setup-recommender.md` for the full four-condition gate and
+announcement line before firing, then invoke
+`claude-code-setup:claude-automation-recommender` via the Skill tool after the
+block and continue the original task. Say nothing when the gate does not fire.
 
-## Self-improvement
-Lessons leave this file. When a run of this skill produces a correction, a
-missed edge case, or a wrong-shaped output, append one observation via
-`~/.claude/scripts/skill-observation-add.sh --target prompt-optimizer` and keep working;
-the monthly drain folds it back through skill-eval. Never edit this skill mid-run.
+## Feedback loop
+Found a missed edge case, a wrong-shaped output, or a rule that misfires?
+Open an issue on this plugin's repository with the input and the output you
+expected. Do not edit this skill mid-run.
 
 ## Examples
 
@@ -557,62 +489,41 @@ above are authoritative on their own.
 ## Rules
 
 1. The `<optimized_prompt>` block appears at the top of the first substantive
-   response per task, structured as the closed 5-element template (see Output Rule
-   for the canonical schema).
+   response per task, structured as the closed 5-element template (Output Rule).
 2. Question count is channel × score: Chat 0–2; Document 1–5 (1 only at
    score ≥ 13, content-extending).
 3. Uncertainty override loop: if >20% uncertainty remains after the initial
-   questions on a Document task, ask a follow-up batch next turn (see Phase 0.D
-   for the recompute logic).
+   questions on a Document task, ask a follow-up batch next turn (Phase 0.D).
 4. Memory inference penalty applies (3→2, 2→1) for memory-based dimensions; full
-   credit only for what's explicit in the current prompt (canonical rule: Phase 0.C).
-5. Defer to specialist skills/pre-steps for their intake, then synthesize their
-   output into the `<optimized_prompt>` block: grant-review, manuscript-reviewer,
-   icu-clinical-consult, biostat-kickoff (new-dataset stats), personalization-gate
-   (securities sizing), clinical-citation-audit / citation-verification
-   (citation-bearing deliverables), deep-research (broad grounded multi-source
-   synthesis of a topic from scratch, STORM-shaped; not the user's own
-   content/data). See the Handoff selector for the route-when / don't-route test.
+   credit only for what's explicit in the current prompt (Phase 0.C).
+5. Defer to a specialist skill's own intake, then synthesize its output into the
+   `<optimized_prompt>` block (no double-intake). Full routing table and the
+   deep-research route-when / don't-route test: Phase 0.A Handoff selector.
 6. User override beats every rule above:
    (a) "just do it" / "just give me" / "stop asking" / "you decide" / "proceed" /
    "autonomously" → skip the intake questions, proceed with assumptions stated
    explicitly. The block STILL fires (unless skip-listed).
-   (b) A user-named count ("ask me 5–10," "quiz me") → RAISES the question cap.
-   (c) "Just"-class defaults → LOWER the count to 0 (but still fires).
-7. Goal handoff (Document-only, 2026-08-08): include `<suggested_goal>` on
-   Document / Artifact tasks only (single-pass included). Chat tasks never get it,
-   regardless of autonomy signal. Suggest the `/goal` line; never auto-fire on the
-   user's behalf. The duplicate CTA line under the block was removed 2026-08-22.
-8. End-of-turn summary length: 1–2 sentences, always (2026-08-08, the former
-   3–5-sentence band for non-trivial turns is deleted). This governs the prose
-   after the deliverable, not the deliverable itself.
-9. Completion Contract (2026-08-22) is a CONTENT gate, never a trigger: it shapes what
-   goes inside an already-fired block and can never change whether the skill fires. When
-   it fires, the final `<instructions>` step is the countable done-condition; derived
-   numbers are re-measured at report time or labeled unverified; partial coverage is
-   declared. Canonical home: the Completion Contract section.
-10. Mannered-prose line (2026-09-03): WRITING, COMMUNICATION, and DOCUMENT blocks
-    carry the one-line instruction "Remove all mannered prose: say what you mean, and
-    use the literal phrase where one exists." It never affects firing.
+   (b) A user-named count ("ask me 5–10," "quiz me") → raises the question cap.
+   (c) "Just"-class defaults → lowers the count to 0 (but still fires).
+7. Goal handoff (Document-only): include `<suggested_goal>` on Document /
+   Artifact tasks only (single-pass included). Chat tasks never get it,
+   regardless of autonomy signal. Suggest the `/goal` line; never auto-fire.
+8. End-of-turn summary length: 1–2 sentences, always. Governs the prose after
+   the deliverable, not the deliverable itself.
+9. Completion Contract is a CONTENT gate, never a trigger: it shapes what goes
+   inside an already-fired block and can never change whether the skill fires.
+   When it fires, the final `<instructions>` step is the countable
+   done-condition; derived numbers are re-measured at report time or labeled
+   unverified; partial coverage is declared. Canonical home: Completion Contract.
+10. Mannered-prose line: WRITING, COMMUNICATION, and DOCUMENT blocks carry the
+    one-line instruction "Remove all mannered prose: say what you mean, and use
+    the literal phrase where one exists." It never affects firing.
 
 ## Gotchas / Known Failure Modes
 
-| Thought | Reality |
-|---|---|
-| "Show the optimized block every turn." | It belongs at the top of the FIRST substantive response per task only. Re-displaying it on follow-up edits, clarifications, and continuations within the same task is the most common over-fire. |
-| "Both this skill and grant-review/manuscript-reviewer/icu-clinical-consult should run their intake." | No double-intake. The specialist skill runs its intake first; prompt-optimizer then synthesizes one `<optimized_prompt>` from the collected inputs (Handoff protocol). |
-| "Audience/Constraints are clear because I remember them from past chats." | Apply the memory inference penalty (3→2, 2→1). Only what's explicit in the current prompt earns full credit; the user may be starting something new. |
-| "Score 14, so skip questions." | For Document/Artifact channel even score 13+ asks 1 *content-extending* question (emphasis/framing/reviewer lens), not zero. Only Chat channel goes to 0 Q. |
-| "User said 'just do it' but I have one more question." | User override wins immediately. End the intake loop and proceed with assumptions made explicit. |
-| "Keep refining until the prompt is perfect." | The refine loop is bounded: fix all weak dimensions each pass, stop at ≤3 passes or on convergence. Gains plateau fast; a 3rd pass is rarely needed. Never show the intermediate passes; only the final block. |
-| "Revise only the single weakest dimension." | Old behavior. Fix EVERY dimension scoring below 3 in the same pass; one-at-a-time lets fixing one quietly degrade another. Resolve trade-offs toward Alignment. |
-| "It's >1 sentence, so fire." | Length is necessary, not sufficient, and skip categories OVERRIDE it. A multi-clause status check ("what's still running, did it work?"), a deterministic command ("rename X to Y"), or an in-prompt continuation ("resume…", "check it") SKIPS regardless of sentence count. |
-| "This continuation is a follow-up, so skip." | Only PURE micro-edits skip ("make the third bullet shorter"). A continuation that introduces NEW substantive work FIRES, "update the files with the following [new scope]…", "resume — and now also draft the discussion" get a fresh block for the new work. |
-| "Attachment-led / pasted-plan / one-line ask, looks skippable." | These are the highest-value FIRES. An `@file` attachment is `<inputs>` and the surrounding ask is the task; a pasted plan or persona is context to execute or critique; a short-but-substantive ask still produces content. But skip precedence is unchanged. If a Skip category matches (a bare command, a status check on an attached file, a one-word continuation), it still wins. |
-| "The loop stopped, call it converged." | A stop with a dimension still <3 because the input is missing is CAPPED, not converged. Name the missing input as an `<inputs>` placeholder and raise it as a question; don't emit a thin block that hides the gap. |
-| "I'm finished, so I'll write the summary." | A report is a set of claims backed by a measurement, never a feeling of completion. Re-measure every derived count at report time or label it unverified, and declare any coverage you did not achieve; a silently narrowed sweep reads exactly like a complete one. |
-| "Broad 'write me a report on X', just optimize and answer it inline." | If it needs grounding across many sources discovered from scratch (a survey / landscape / state-of-the-field on a topic), route to `deep-research` and defer intake to it (no double-intake). But do not route the inverse: the user's own draft/data, single-fact lookups, opinion/taste, specialist-owned tasks, or short answers. Those stay inline. See the STORM-shaped route-when / don't-route test. |
-| "The block is already long; drop the mannered-prose line to save space." | It is one line, scoped to prose-producing task types, and exempt from the Economy pass. Keep it. |
+Eighteen recurring misreadings of these rules, with the correction, are logged in
+`references/versions.md` ("Gotchas / Known Failure Modes, moved from SKILL.md").
+Read it when behavior seems off; the Rules list above is the authoritative statement.
 
 ## Versions
 
