@@ -7,11 +7,11 @@ selector all remain in `SKILL.md` and are authoritative there.
 
 ## Examples
 
-### Example 1: Grant Aims (defer to grant-review, Document, 5 Q via handoff)
+### Example 1: Grant Aims (defer to grant-reviewer, Document, 5 Q via handoff)
 
 **User**: "Help me draft specific aims for my R01 on ML-based ventilator weaning in pediatric ARDS"
 
-**Action**: Task = RESEARCH-DESIGN, mechanism = R01 → grant-review's intake
+**Action**: Task = RESEARCH-DESIGN, mechanism = R01 → grant-reviewer's intake
 runs first (agency, mechanism, payoff aim, scope, timeline; 5 questions).
 prompt-optimizer then synthesizes:
 

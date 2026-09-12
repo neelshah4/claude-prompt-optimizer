@@ -88,7 +88,7 @@ CMD_RE      = r"^(rename|move|mv|delete|rm|open|run|install|cd|ls|cat|git|npm|no
 
 # Continuation-anaphora (verbatim from target-artifacts.md §B step 7c; that file is not live —
 # the only copy on disk is the archived provenance copy at
-# ~/.claude/backups/skill-upgrades/skill-upgrade-prompt-optimizer-20260711/target-artifacts.md).
+# (internal backup, not published)/target-artifacts.md).
 CONT_RE = (r"^(resume|continue|go on|keep going|proceed|redo|try again|also|now (make|do|add)|"
            r"check it|update the|the .{0,30} you (built|made|wrote)|"
            r"make the .{0,25}(shorter|longer|bigger|smaller))")
@@ -239,7 +239,7 @@ try:
                   "or, if a skip category genuinely applies, state which one in one line and finish.")
         # Compact separators to match target-artifacts.md §B verbatim ({"decision":"block",...}).
         # (target-artifacts.md is archived, not live — see
-        # ~/.claude/backups/skill-upgrades/skill-upgrade-prompt-optimizer-20260711/target-artifacts.md.)
+        # (internal backup, not published)/target-artifacts.md.)
         sys.stdout.write(json.dumps({"decision": "block", "reason": reason},
                                     ensure_ascii=False, separators=(",", ":")))
         sys.exit(0)

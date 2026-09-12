@@ -5,6 +5,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning is calendar-based (`YYYY.M.D`), matching the skill's own dated version
 string rather than imposing a semantic version it does not have.
 
+## [2026.9.12] - 2026-09-12
+
+### Added
+- A second fixed drafting line ("craft line") alongside the existing mannered-prose line for WRITING, COMMUNICATION, and DOCUMENT tasks: "Lead with the point; open each sentence on what the reader already holds and end it on the new item; gloss every term of art for the named reader; prefer the short everyday word." Sourced from the writing-craft canon (Orwell, Williams, Zinsser, Pinker, Merriam-Webster's Dictionary of English Usage, the Economist Style Guide).
+- One clause to the model-agnostic drafting technique list: name the reader's expertise so the gloss rule has a target.
+- A "Supersedes any bundled/upstream variant" sentence to the frontmatter description.
+
+### Fixed
+- Two stale `grant-review` references corrected to `grant-reviewer` (the skill's actual name) in SKILL.md.
+- Two archived-path comments in `hooks/prompt-optimizer-stop-check.sh`, missed by a prior scrub, genericized to remove an internal filesystem path.
+
+No trigger, Skip, schema, or hook-semantics change; both hooks remain otherwise byte-identical to v2026.9.8.
+
 ## [2026.9.8] - 2026-09-08
 
 ### Changed

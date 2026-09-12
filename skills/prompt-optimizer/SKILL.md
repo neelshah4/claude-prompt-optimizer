@@ -15,7 +15,8 @@ description: >-
   continuations or edits (resume, continue, check it, make the Nth shorter),
   though a continuation adding new work fires; or a block longer than the
   answer. Emits a 5-element prompt block on the first response per task.
-lastReviewed: 2026-09-08
+  Supersedes any bundled/upstream variant.
+lastReviewed: 2026-09-12
 ---
 # Prompt Optimizer
 
@@ -183,10 +184,10 @@ User prompt arrives
 | PRESENTATION | Slide decks, posters, visual deliverables |
 | COMMUNICATION | Outreach, networking, committee messages |
 | DOCUMENT | Spreadsheets, templates, checklists |
-| RESEARCH-DESIGN | Study design, protocols, grant aims; *defer to grant-review for R01/K* |
+| RESEARCH-DESIGN | Study design, protocols, grant aims; *defer to grant-reviewer for R01/K* |
 | GENERAL | Recommendations, comparisons, explanations, multi-step reasoning |
 
-WRITING, COMMUNICATION, and DOCUMENT tasks carry the mannered-prose line in
+WRITING, COMMUNICATION, and DOCUMENT tasks carry the mannered-prose and craft lines in
 `<instructions>` (see Refine).
 
 **Handoff protocol**: if the task activates another skill with its own intake or
@@ -196,7 +197,7 @@ double-intake. Route by this selector:
 
 | Signal | Hand off to (before intake) |
 |--------|------------------------------|
-| Grant / specific aims / RFA / payoff aim | grant-review |
+| Grant / specific aims / RFA / payoff aim | grant-reviewer |
 | Manuscript / abstract / reviewer response | manuscript-reviewer |
 | Manuscript-class stats on a **new dataset** | biostat-kickoff (then stats-plan-reviewer) |
 | Live patient scenario / physiology / drug-vent-hemodynamics | icu-clinical-consult |
@@ -205,7 +206,7 @@ double-intake. Route by this selector:
 | Broad grounded multi-source synthesis from scratch, such as "comprehensive/grounded report, survey, landscape, state-of-the-field on topic X," explore-an-unfamiliar-topic, cited long-form built from web sources | `deep-research` **if installed**, else run the sweep inline (see below) |
 
 When "review" is ambiguous (grant vs manuscript), pick by the artifact named:
-aims page → grant-review; abstract/results/figures → manuscript-reviewer.
+aims page → grant-reviewer; abstract/results/figures → manuscript-reviewer.
 
 **STORM-shaped task → `deep-research` (route-when / don't-route).** `deep-research`,
 the local analog of Stanford's STORM (fan-out search → fetch → verify → cited
@@ -342,13 +343,19 @@ list; let thinking carry the reasoning instead of narrating it; decompose at
 natural joints (a step hiding two deliverables is under-split, one smaller
 than a real unit of work is over-split); prefer the cheap reversible action
 (run the check, open the file, read the value) to a prediction about it; name
-the audience and its expertise; state directives affirmatively; assign a role
-in `<role>`; and leave an `<inputs>` slot for any exemplar rather than
-inventing one. These sharpen the block; they never expand it past what the
-task needs. **Remove all mannered prose.** On WRITING, COMMUNICATION, and
-DOCUMENT tasks, the generated `<instructions>` carry one line: "Remove all
-mannered prose: say what you mean, and use the literal phrase where one
-exists." One line, added once, exempt from the Economy pass.
+the audience and its expertise; name the reader's expertise so the gloss rule
+has a target (curse of knowledge: the writer cannot see what the reader
+lacks); state directives affirmatively; assign a role in `<role>`; and leave
+an `<inputs>` slot for any exemplar rather than inventing one. These sharpen
+the block; they never expand it past what the task needs. **Remove all
+mannered prose.** On WRITING, COMMUNICATION, and DOCUMENT tasks, the
+generated `<instructions>` carry one line: "Remove all mannered prose: say
+what you mean, and use the literal phrase where one exists." One line, added
+once, exempt from the Economy pass. **Craft line.** The same tasks carry a
+second fixed line: "Lead with the point; open each sentence on what the
+reader already holds and end it on the new item; gloss every term of art for
+the named reader; prefer the short everyday word." Added once, exempt from
+the Economy pass. Source: the writing-craft canon (Orwell, Williams, Zinsser, Pinker, Merriam-Webster's Dictionary of English Usage, the Economist Style Guide).
 
 **Each pass:**
 
@@ -515,9 +522,12 @@ above are authoritative on their own.
    When it fires, the final `<instructions>` step is the countable
    done-condition; derived numbers are re-measured at report time or labeled
    unverified; partial coverage is declared. Canonical home: Completion Contract.
-10. Mannered-prose line: WRITING, COMMUNICATION, and DOCUMENT blocks carry the
-    one-line instruction "Remove all mannered prose: say what you mean, and use
-    the literal phrase where one exists." It never affects firing.
+10. Mannered-prose and craft lines: WRITING, COMMUNICATION, and DOCUMENT blocks
+    carry two fixed lines — "Remove all mannered prose: say what you mean, and
+    use the literal phrase where one exists," and "Lead with the point; open
+    each sentence on what the reader already holds and end it on the new item;
+    gloss every term of art for the named reader; prefer the short everyday
+    word." Neither affects firing.
 
 ## Gotchas / Known Failure Modes
 
