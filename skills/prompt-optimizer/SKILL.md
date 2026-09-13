@@ -16,7 +16,7 @@ description: >-
   though a continuation adding new work fires; or a block longer than the
   answer. Emits a 5-element prompt block on the first response per task.
   Supersedes any bundled/upstream variant.
-lastReviewed: 2026-09-12
+lastReviewed: 2026-09-13
 ---
 # Prompt Optimizer
 
@@ -203,6 +203,8 @@ double-intake. Route by this selector:
 | Live patient scenario / physiology / drug-vent-hemodynamics | icu-clinical-consult |
 | Buy/hold/sell or position-sizing on a security | personalization-gate |
 | Any deliverable that will name citations | clinical-citation-audit / citation-verification |
+| Drafting or editing a manuscript, abstract, grant narrative, reviewer response, IRB free text, or cover letter (the draft itself, not the review panel) | draft first, then `academic-writing-reviewer` if present, then writing-anti-ai |
+| Email, memo, Slack or chat reply, handoff note, README, executive summary | draft first, then `casual-writing-reviewer` if present, then writing-anti-ai |
 | Broad grounded multi-source synthesis from scratch, such as "comprehensive/grounded report, survey, landscape, state-of-the-field on topic X," explore-an-unfamiliar-topic, cited long-form built from web sources | `deep-research` **if installed**, else run the sweep inline (see below) |
 
 When "review" is ambiguous (grant vs manuscript), pick by the artifact named:
@@ -528,6 +530,10 @@ above are authoritative on their own.
     each sentence on what the reader already holds and end it on the new item;
     gloss every term of art for the named reader; prefer the short everyday
     word." Neither affects firing.
+11. Reviewer ordering on WRITING, COMMUNICATION, and DOCUMENT tasks: register
+    reviewer (academic or casual) → writing-anti-ai → receipts, with
+    `[writing-review: …]` directly above `[anti-AI: …]`, both under the block.
+    Neither affects firing.
 
 ## Gotchas / Known Failure Modes
 

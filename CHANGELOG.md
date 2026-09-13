@@ -5,6 +5,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning is calendar-based (`YYYY.M.D`), matching the skill's own dated version
 string rather than imposing a semantic version it does not have.
 
+## [2026.9.13] - 2026-09-13
+
+### Added
+- Two Phase 0.A Handoff-selector rows: a manuscript-class draft (manuscript, abstract, grant narrative, reviewer response, IRB free text, cover letter) routes to `academic-writing-reviewer` if present, then writing-anti-ai; a message-class draft (email, memo, Slack/chat reply, handoff note, README, executive summary) routes to `casual-writing-reviewer` if present, then writing-anti-ai.
+- Rule 11, stating the reviewer-ordering sequence (register reviewer, then writing-anti-ai, then receipts) explicitly.
+
+No trigger, Skip, schema, or hook-semantics change; both hooks remain byte-identical to v2026.9.12.
+
 ## [2026.9.12] - 2026-09-12
 
 ### Added

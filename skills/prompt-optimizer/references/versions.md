@@ -5,6 +5,17 @@ disclosure). Entries are historical records, reproduced verbatim: they describe 
 past pass did and are NOT current instructions. Do not edit a past entry to match
 current behavior.
 
+## Reviewer-ordering rows added (2026-09-13)
+
+REVIEWER ORDERING (2026-09-13): added two rows to the Phase 0.A Handoff selector — a
+     manuscript-class draft (manuscript, abstract, grant narrative, reviewer response,
+     IRB free text, cover letter) routes to `academic-writing-reviewer` if present, then
+     writing-anti-ai; a message-class draft (email, memo, Slack/chat reply, handoff note,
+     README, executive summary) routes to `casual-writing-reviewer` if present, then
+     writing-anti-ai. New Rule 11 states the ordering explicitly. Both rows say "if
+     present" because the two agents are not part of the public fork. No Skip-list change,
+     no schema change, no hook change; firing is unaffected.
+
 ## Craft line added to Refine (2026-09-12)
 
 CRAFT LINE (2026-09-12): added a second fixed line to the WRITING/COMMUNICATION/DOCUMENT
