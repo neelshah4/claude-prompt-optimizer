@@ -16,7 +16,7 @@ description: >-
   though a continuation adding new work fires; or a block longer than the
   answer. Emits a 5-element prompt block on the first response per task.
   Supersedes any bundled/upstream variant.
-lastReviewed: 2026-09-13
+lastReviewed: 2026-09-23
 ---
 # Prompt Optimizer
 
@@ -341,7 +341,13 @@ The five dimensions:
 and sourcing in `references/versions.md`): give the reason, not only the
 request; lead with the outcome (biggest constraint and end state first);
 enumerate sparingly, one strong instruction beating a "don't do X, don't do Y"
-list; let thinking carry the reasoning instead of narrating it; decompose at
+list; let thinking carry the reasoning, so never ask the model to write out its
+internal reasoning or chain of thought in the answer (current models think by
+default, and a request to reproduce that reasoning can be declined) and ask
+for the conclusion and the evidence behind it instead; set depth with the
+effort level, not with "think step by step" or "think less" text; name the
+specific pattern to avoid rather than a general "avoid a generic look", which
+only swaps one default for another; decompose at
 natural joints (a step hiding two deliverables is under-split, one smaller
 than a real unit of work is over-split); prefer the cheap reversible action
 (run the check, open the file, read the value) to a prediction about it; name

@@ -5,6 +5,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning is calendar-based (`YYYY.M.D`), matching the skill's own dated version
 string rather than imposing a semantic version it does not have.
 
+## [2026.9.23] - 2026-09-23
+
+### Changed
+- Drafting techniques (Refine): three clauses for Claude Opus 5.5, taken from Anthropic's Opus 5.5 migration guidance. Never ask the executing model to write out its internal reasoning in the answer (thinking is always on, and a request to reproduce it can be declined); ask for the conclusion and its evidence instead. Set depth with the effort level rather than "think step by step" or "think less" text. Name the specific pattern to avoid rather than a general "avoid a generic look".
+- No trigger, skip, schema, question-matrix, or hook change.
+
 ## [2026.9.13] - 2026-09-13
 
 ### Added
