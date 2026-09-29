@@ -33,18 +33,21 @@ This skill spends a few lines up front instead. The cost is bounded and visible;
 
 ## What you see
 
-A five-element block at the top of the first response for each task:
+A block at the top of the first response for each task, with its own pass/fail eval built in:
 
 ```xml
 <optimized_prompt>
   <role>Who Claude is for this task, and what the task is.</role>
   <inputs>Named placeholders for dynamic content, or "none".</inputs>
   <instructions>Numbered steps, ordered the way a person would work through it.</instructions>
+  <eval>check or hillclimb, plus 2–5 pass/fail checks read off the finished output.</eval>
   <critical>At most two constraints whose violation most damages the deliverable.</critical>
 </optimized_prompt>
 ```
 
 Two elements are conditional. `<examples>` appears only when a worked example sharpens the spec. `<suggested_goal>` appears only on document-producing tasks, carrying a pasteable `/goal` line.
+
+**Every block carries an eval.** `<eval>` lists 2–5 yes/no checks that can be read off the output or a tool result ("script exits 0 on the sample", "≤ 300 words"), never a 1–5 quality scale, and the response states the tally before it closes. When the thing being built runs again (a skill, prompt, agent, workflow, or pipeline), the mode is `hillclimb`: build cases from real use, split them into train and held-out test sets, change one thing per round, keep a change only when both sets improve, and stop after 2–3 flat rounds. The method follows Anthropic's post on automating eval design and hillclimbing; the full protocol is in `skills/prompt-optimizer/references/eval-hillclimb.md`.
 
 **The schema is closed.** Only these element names, ever. Invented tags and dropped `<inputs>` are bugs, not stylistic variation. The closure is what makes the block skimmable — you learn where to look once.
 
@@ -71,6 +74,8 @@ Two elements are conditional. `<examples>` appears only when a worked example sh
     4. Close with the specific patient phenotype, if any, where the choice
        actually differs.
   </instructions>
+  <eval>check: guideline and GRADE strength stated before mechanism; all four
+  outcomes compared; every adult-derived claim labeled adult.</eval>
   <critical>Do not promote an association to a causal claim. Pediatric-first
   evidence hierarchy — adult data is labeled as adult data.</critical>
 </optimized_prompt>

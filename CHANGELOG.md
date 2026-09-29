@@ -5,6 +5,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning is calendar-based (`YYYY.M.D`), matching the skill's own dated version
 string rather than imposing a semantic version it does not have.
 
+## [2026.9.28] - 2026-09-28
+
+### Added
+- A required `<eval>` element and an Eval Contract, from Anthropic's post on automating eval design and hillclimbing. `check` mode on every task: 2–5 yes/no checks read off the output, run before the response closes, with the tally stated. `hillclimb` mode by default when the thing being built runs again (skills, prompts, agents, tool descriptions, hooks, workflows, pipelines): cases from real use, a programmatic or checklist grader, a train/held-out split, one change per round, keep only when both sets improve, stop after 2–3 flat rounds.
+- `references/eval-hillclimb.md` with the full protocol, the four properties of a good eval, and the guards against gaming it.
+- Rule 12. The description is trimmed to stay under the 1024-character limit.
+- No trigger, skip, question-matrix, or hook change; the Stop hook checks only that the block is present.
+
 ## [2026.9.23] - 2026-09-23
 
 ### Changed

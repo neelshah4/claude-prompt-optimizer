@@ -5,6 +5,18 @@ disclosure). Entries are historical records, reproduced verbatim: they describe 
 past pass did and are NOT current instructions. Do not edit a past entry to match
 current behavior.
 
+## Eval Contract + hillclimb default (2026-09-28)
+
+EVAL CONTRACT (2026-09-28): added a required `<eval>` element to the block schema and an
+     Eval Contract section, from Anthropic's "Automating eval design and hillclimbing" post.
+     `check` mode (2–5 pass/fail checks, tally stated at closeout) runs on every task;
+     `hillclimb` mode (real-use cases, programmatic or checklist grader, train/test split,
+     one change per round, keep only when both sets improve, stop after 2–3 flat rounds,
+     root-cause sort at the stall) is the default on repeatable surfaces and Workflow runs.
+     New `references/eval-hillclimb.md` holds the protocol; Rule 12 states it. The Stop
+     hook checks only for the block's presence, so no hook change; Skip and fire semantics
+     unchanged. Description trimmed to stay under the 1024-char chat-upload limit.
+
 ## Reviewer-ordering rows added (2026-09-13)
 
 REVIEWER ORDERING (2026-09-13): added two rows to the Phase 0.A Handoff selector — a

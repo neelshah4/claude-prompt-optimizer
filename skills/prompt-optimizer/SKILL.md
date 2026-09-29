@@ -14,9 +14,9 @@ description: >-
   status/verification checks; deterministic file/tool commands; in-prompt
   continuations or edits (resume, continue, check it, make the Nth shorter),
   though a continuation adding new work fires; or a block longer than the
-  answer. Emits a 5-element prompt block on the first response per task.
+  answer. Emits a prompt block with a built-in eval per task.
   Supersedes any bundled/upstream variant.
-lastReviewed: 2026-09-23
+lastReviewed: 2026-09-28
 ---
 # Prompt Optimizer
 
@@ -37,9 +37,9 @@ Display the optimized prompt at the top of the **first substantive response**
 for each new task. Skip on follow-up edits, clarifications, and continuations
 within the same task.
 
-The output is a 5-element XML block mirroring Anthropic's Prompting 101
-structure (task description → dynamic content → detailed instructions →
-optional examples → reminder of critical points):
+The output is an XML block mirroring Anthropic's Prompting 101 structure
+(task description → dynamic content → detailed instructions → optional
+examples → reminder of critical points), plus a built-in eval:
 
 ```
 <optimized_prompt>
@@ -51,6 +51,10 @@ optional examples → reminder of critical points):
     the step they govern.
   </instructions>
   <examples>Include only if a worked example sharpens the spec; otherwise omit.</examples>
+  <eval>Always present. mode: check | hillclimb. 2–5 pass/fail checks,
+  each readable off the artifact or a tool output (never a 1–5 scale).
+  hillclimb adds: case source + count, grader type, train/test split,
+  stop rule. See Eval Contract.</eval>
   <critical>Restate AT MOST 2 of the hardest constraints — the two whose
   violation most damages the deliverable (length cap, audience,
   refuse-if-uncertain, format). Everything else lives in <instructions>.
@@ -67,10 +71,10 @@ applies, the response does not ship without it. Enforcement is external and
 deterministic, via the `Stop` hook `prompt-optimizer-stop-check.sh`, not a self-check.
 
 **The schema is closed.** Use exactly `<role>`, `<inputs>`, `<instructions>`,
-and `<critical>` as element names, plus `<examples>` /
+`<eval>`, and `<critical>` as element names, plus `<examples>` /
 `<suggested_goal>` only when their gates fire. Never substitute `<task>`,
 `<context>`, `<constraints>`, or any other tag; never drop `<inputs>` (use
-literal "none") or `<instructions>`. Keep `<instructions>` terse on trivial Chat
+literal "none"), `<instructions>`, or `<eval>` (one line on a trivial ask). Keep `<instructions>` terse on trivial Chat
 asks. If the whole block would run longer than the answer itself, that's a
 signal the prompt was trivial: skip the block (and likely the skill) rather than
 bloating a short reply.
@@ -431,6 +435,32 @@ count toward the block-would-exceed-answer guard.
 Read `references/completion-discipline.md` when the run is long, multi-artifact, or
 orchestrated.
 
+### Eval Contract (default-on)
+
+**Content gate, not a trigger.** Every fired block carries `<eval>`; it never decides
+whether the skill fires. Full protocol: `references/eval-hillclimb.md`.
+
+- **`check` mode (every task).** 2–5 pass/fail checks derived from the success
+  criteria, each answerable from the artifact or a tool output: "script exits 0 on the
+  sample", "≤ 300 words", "every row cites a source". No 1–5 scales. Run them before the
+  closeout and state the tally ("4/4 checks passed", or which failed). When the
+  Completion Contract fires, its countable done-condition is one of the checks.
+- **`hillclimb` mode (default for repeatable surfaces).** Fires when the thing built
+  runs again (skill, prompt, agent, tool description, hook, workflow script, pipeline,
+  template, extraction step), on any Workflow run, and on any optimize / iterate /
+  improve / make-cheaper ask. Build cases from real use: past outputs, logged
+  corrections, bug reports, 5–10 hand-written. Pick hard cases by human judgment, not
+  by today's model's failures, and grade programmatically where the output is
+  constrained. Confirm headroom first (baseline well under ~95%), then split train from
+  test and change one thing per round. Keep the change only when both sets improve;
+  revert when only train does. Stop after 2–3 flat rounds. At the stall, sort
+  leftovers into real defects and broken cases or graders.
+- **Guards.** Never paste failure or case text into the surface being tuned; the system
+  under test never sees reference answers; no harness hack that only satisfies the eval.
+- **Economy.** On a trivial Chat ask `<eval>` is one line ("check: answer names the
+  dose and its source"). It is exempt from the Economy pass and does not count toward the
+  block-would-exceed-answer guard.
+
 ### Display and Execute
 
 1. Display the `<optimized_prompt>` block at the top of the response.
@@ -504,7 +534,7 @@ above are authoritative on their own.
 ## Rules
 
 1. The `<optimized_prompt>` block appears at the top of the first substantive
-   response per task, structured as the closed 5-element template (Output Rule).
+   response per task, structured as the closed template with its `<eval>` element (Output Rule).
 2. Question count is channel × score: Chat 0–2; Document 1–5 (1 only at
    score ≥ 13, content-extending).
 3. Uncertainty override loop: if >20% uncertainty remains after the initial
@@ -540,6 +570,10 @@ above are authoritative on their own.
     reviewer (academic or casual) → writing-anti-ai → receipts, with
     `[writing-review: …]` directly above `[anti-AI: …]`, both under the block.
     Neither affects firing.
+12. Eval Contract: every block carries `<eval>`. `check` mode (2–5 pass/fail checks,
+    tally stated at closeout) on every task; `hillclimb` mode (train/test split, one
+    change per round, keep only when both sets improve, stop after 2–3 flat rounds) by
+    default on repeatable surfaces and Workflow runs. Content gate; never affects firing.
 
 ## Gotchas / Known Failure Modes
 
