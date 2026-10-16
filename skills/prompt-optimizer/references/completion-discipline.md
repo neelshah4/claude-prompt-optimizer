@@ -96,6 +96,41 @@ Discipline is not maximalism.
 - The sharpened final step does not count toward the block-would-exceed-answer guard,
   which is evaluated against the base block.
 
+## Long-run harness
+
+Detail for SKILL.md's `### Long-Run Harness`. Source: a seven-layer harness prompt
+adapted from Karpathy's autoresearch, shared on 2026-10-07
+(credited to @beamnxw; original wording theirs, not Karpathy's). Most of it was already
+here, so only the gaps were imported.
+
+**Already covered, not re-imported:** baseline before change, one change per round, log
+reverted rounds (eval-hillclimb.md); completion checklist with observable evidence
+(Completion Contract); plan file as live checklist (standing instructions); ask before publishing,
+sending, or spending (standing autonomy rules); save the procedure after a good run
+(the feedback loop); effort tiers (standing defaults).
+
+**Imported:**
+
+| Item | Where it lives now |
+|---|---|
+| Handoff note fields (outputs at paths, stages + check results, decisions + evidence, open issues, one next action); inspect referenced files before trusting status on resume | Harness step 3; standing plan-file rule |
+| Check ledger: requirement, pass/fail/unresolved, evidence, correction; missing evidence stays visible; re-run only affected checks | Eval Contract `check` mode |
+| Never weaken a check to get a pass | Eval Contract; Rule 13; standing completion rule |
+| Before retrying an external write, check whether the first attempt landed | Refine drafting bullet; Rule 13; standing autonomy rules |
+| Retry only after changing something relevant; do not repeat a failed approach without a new reason | Refine drafting bullet; harness step 2; eval-hillclimb.md |
+| Confirm one known source is readable before a long run | Harness step 1 |
+| Partial status with exact remaining work at a blocker or limit | Harness step 4 |
+| Prefer the simpler variant when results tie | eval-hillclimb.md |
+
+**Rejected:**
+
+| Item | Why |
+|---|---|
+| Separate `progress.md`, `checks.md`, `sources/task.md` files | The plan file already carries state; three more files per task is overhead and a second source of truth. The ledger lives in the plan file or the closeout. |
+| `{{TASK}}`/`{{SCOPE}}`/`{{LIMIT}}` input template | The block's `<inputs>` and Phase 0 intake already fill these. |
+| "Prose alone is not a boundary; configure tool rules" | Already the house position (Dynamic workflows Hard Rule, settings.json denies, Stop hooks). |
+| "Report measured usage only" | Narrow; Completion Contract Rule 2 already bars unmeasured numbers. |
+
 ## Provenance
 
 `unlazy` v2 (github.com/Leonxlnx/unlazy, MIT), fetched 2026-08-22. Its thesis is that

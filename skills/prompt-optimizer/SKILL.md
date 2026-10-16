@@ -16,7 +16,7 @@ description: >-
   though a continuation adding new work fires; or a block longer than the
   answer. Emits a prompt block with a built-in eval per task.
   Supersedes any bundled/upstream variant.
-lastReviewed: 2026-09-28
+lastReviewed: 2026-10-16
 ---
 # Prompt Optimizer
 
@@ -44,7 +44,8 @@ examples → reminder of critical points), plus a built-in eval:
 ```
 <optimized_prompt>
   <role>One sentence: who Claude is for this task and what the task is.</role>
-  <inputs>Named placeholders for dynamic content, or "none".</inputs>
+  <inputs>Named placeholders for dynamic content as NAME: description lines
+  (never nested tags), or "none".</inputs>
   <instructions>
     Numbered steps, ordered to mirror how a human would naturally work
     through the task. Include format/length/tone constraints inline with
@@ -52,7 +53,8 @@ examples → reminder of critical points), plus a built-in eval:
   </instructions>
   <examples>Include only if a worked example sharpens the spec; otherwise omit.</examples>
   <eval>Always present. mode: check | hillclimb. 2–5 pass/fail checks,
-  each readable off the artifact or a tool output (never a 1–5 scale).
+  each readable off the artifact or a tool output (never a 1–5 scale);
+  at least one names its outside judge (`— judge: <what>`).
   hillclimb adds: case source + count, grader type, train/test split,
   stop rule. See Eval Contract.</eval>
   <critical>Restate AT MOST 2 of the hardest constraints — the two whose
@@ -225,10 +227,9 @@ supplies the content/data; single-fact lookup; opinion/taste with no
 synthesis; a specialist above owns it; a short answer; or the user wants
 Claude's own reasoning. **No double-intake:** it self-asks its own 2-3
 clarifying questions, so prompt-optimizer defers intake and synthesizes the
-block from the refined question. **CHECK IT EXISTS BEFORE ROUTING.** No
-`deep-research` skill is installed on this surface (only an uninstalled
-legal-plugin copy exists); confirm it is in the available-skills list before
-naming it. If absent, do the work inline: run the fan-out yourself (parallel
+block from the refined question. **CHECK IT EXISTS BEFORE ROUTING.** Confirm
+`deep-research` is in this session's available-skills list before naming it;
+some surfaces do not have it. If absent, do the work inline: run the fan-out yourself (parallel
 searches, fetch primaries, verify each claim against what was fetched, cite
 only fetched sources), ask the scoping questions yourself, hold the same
 no-fabrication bar, and never tell the user a skill is handling it when none
@@ -279,7 +280,7 @@ intake. Only information explicit in the current prompt earns full credit.
 
 Apply the **channel × score** matrix:
 
-| Channel | Score 13–15 (uncertainty <20%) | Score 10–12 (20–50%) | Score 5–9 (>50%) |
+| Channel | Score 13–15 (uncertainty ≤20%) | Score 10–12 (20–50%) | Score 5–9 (>50%) |
 |---------|--------------------------------|----------------------|------------------|
 | **Chat** | **0 Q** | **1 Q** | **2 Q** |
 | **Document / Artifact** | **1 Q** (content-extending) | **4 Q** | **5 Q** |
@@ -337,6 +338,9 @@ The five dimensions:
 - **Completeness.** Are all constraints, formats, and criteria captured?
 - **Economy.** Is every instruction necessary, or is anything redundant?
 - **Alignment.** Does it match what the user actually needs, not what's easy?
+  Name the outcome the deliverable serves, as a verb: a review deck is "get busy
+  people to decide in 30 minutes", not "a deck". The block serves that outcome at
+  the asked scope; a larger version goes in one sentence under the block.
 - **Order.** Do steps unfold in the order a human would naturally work
   through this? Information needed first should appear first; downstream
   steps should reference upstream context, not the reverse.
@@ -354,10 +358,12 @@ specific pattern to avoid rather than a general "avoid a generic look", which
 only swaps one default for another; decompose at
 natural joints (a step hiding two deliverables is under-split, one smaller
 than a real unit of work is over-split); prefer the cheap reversible action
-(run the check, open the file, read the value) to a prediction about it; name
+(run the check, open the file, read the value) to a prediction about it; retry
+a failed step only after changing something relevant, and before retrying an
+external write (send, push, post, order) check whether the first one landed; name
 the audience and its expertise; name the reader's expertise so the gloss rule
 has a target (curse of knowledge: the writer cannot see what the reader
-lacks); state directives affirmatively; assign a role in `<role>`; and leave
+lacks); state directives affirmatively; give `<role>` the job and what that professional does, never a persona or a voice to imitate (role-play changes vocabulary, not method); and leave
 an `<inputs>` slot for any exemplar rather than inventing one. These sharpen
 the block; they never expand it past what the task needs. **Remove all
 mannered prose.** On WRITING, COMMUNICATION, and DOCUMENT tasks, the
@@ -392,6 +398,49 @@ The loop runs on every triggered turn (Chat and Document alike). Because it
 stops on convergence, an already-strong prompt resolves in a single pass, so
 "run it everywhere" self-limits. **Refinement is silent.** Show only the
 final `<optimized_prompt>` block, never the intermediate passes. Commit.
+
+### Depth Pass
+
+**Content gate, not a trigger.** Fires inside an already-fired block on Document-channel,
+ANALYSIS, CODE, RESEARCH-DESIGN, and skill/agent/hook-engineering tasks. It does not run
+on a Chat answer that stays a short reply. The aim is a deeper version of the task, not a
+bigger one: each answer replaces a weak step or sharpens `<inputs>` / `<eval>`, and adds no
+deliverable. Source and kept/rejected list: `references/depth-pass.md`.
+
+While drafting, answer four questions and write each answer into the element it changes:
+
+1. **Expert move.** What would a top professional in this field do here that the prompt
+   does not ask for? Fold it in when it stays inside the asked scope. When it would widen
+   the scope, say so in one sentence under the block and do the task as asked.
+2. **Rawest material.** Start from the least-digested source Claude can reach, and name it
+   in `<inputs>`: the full source over a summary, screenshot, or fetch digest; the rows over
+   the summary table; the logs, transcripts, and logged corrections over a description of
+   them. When only a digest is reachable, say so.
+3. **Methods and instruments.** Name the method and the tool the expert would use (a
+   mixed-effects model in statsmodels, a pytest suite, a blind pairwise judge, a
+   pharmacokinetic calculation), never an adjective such as rigorous, comprehensive, or
+   expert. New vocabulary without a new method is the failure this step exists to catch.
+4. **Outside judge.** Name what, other than the model that made the artifact or the user,
+   shows the result is right. It becomes the judged check in `<eval>` (Eval Contract).
+
+Two further moves, only when the prompt calls for them. **Test the premise:** when the
+task builds on a stated belief about cause ("churn is an onboarding problem"), add a step
+that tries to reproduce the belief from the raw material before building on it.
+**Specific hard target:** where the work has a measurable bar, state the bar ("p95 load
+under 200 ms") rather than "improve" or "do your best".
+
+**Size.** The pass edits; it does not add. Each answer replaces a vague clause or folds
+into a step that already exists, and the judge is a short tail on an existing check
+(`— judge: pytest exit code`), not a new sentence. Target at most 6 `<instructions>` steps
+on a Document block and 4 on Chat, one or two sentences each, unless the ask itself names
+more parts; `<eval>` stays at 2–5 one-line checks. A block that came out longer than the
+task needed fails Economy, so re-tighten it in the same pass.
+
+**Explicit cue.** When the user asks for a deeper version of a task or poses these four
+questions, the pass runs on any channel, and the four answers go directly above the block,
+one or two lines each. The block is then the rewritten prompt the user asked for, so the
+block-would-exceed-answer guard does not apply. Without the cue the pass is silent and
+only its results show.
 
 ### Completion Contract
 
@@ -435,6 +484,32 @@ count toward the block-would-exceed-answer guard.
 Read `references/completion-discipline.md` when the run is long, multi-artifact, or
 orchestrated.
 
+### Long-Run Harness
+
+**Content gate, not a trigger.** Fires inside an already-fired block when the run may
+outlive one context window or one session: a multi-stage build, an autonomous or
+Workflow run, a sweep the Completion Contract caught, or a "keep going until done" ask.
+Adapted from Karpathy's autoresearch by way of a seven-layer harness prompt; what was
+kept and rejected is in `references/completion-discipline.md` (Long-run harness).
+
+When it fires, `<instructions>` carry these steps, folded into existing steps where
+they overlap:
+
+1. **Preflight.** Confirm one known source or tool is readable before the long run
+   starts. A missing tool is named as the blocker, and the work that does not need it
+   still ships.
+2. **Bounded steps.** Each step changes one thing within scope, runs the checks that
+   change touches, keeps useful work, and undoes only its own failed change. A failed
+   approach is not repeated without a new reason.
+3. **Handoff note.** After each meaningful stage, the plan file (the run's live checklist) records outputs at exact paths, finished stages with observed check
+   results, decisions with their evidence, open issues, and one concrete next action.
+   On resume, open the referenced files before trusting the recorded status.
+4. **Partial stop.** At a blocker or the run limit, return the partial status with the
+   exact remaining work rather than a summary that reads as done.
+
+The `<eval>` checks run as the ledger described in the Eval Contract. The harness adds
+no schema element; on a short run it adds nothing.
+
 ### Eval Contract (default-on)
 
 **Content gate, not a trigger.** Every fired block carries `<eval>`; it never decides
@@ -445,6 +520,16 @@ whether the skill fires. Full protocol: `references/eval-hillclimb.md`.
   sample", "≤ 300 words", "every row cites a source". No 1–5 scales. Run them before the
   closeout and state the tally ("4/4 checks passed", or which failed). When the
   Completion Contract fires, its countable done-condition is one of the checks.
+  On a long or multi-artifact run, keep the checks as a ledger (requirement | pass /
+  fail / unresolved | evidence | correction): evidence is a path, a source link, or
+  the check's output; missing evidence stays visible; a fix re-runs only the checks
+  it touches. Never weaken a check to get a pass.
+- **Outside judge (every non-trivial task).** At least one check is decided by something
+  other than the model that made the artifact: a tool it runs (test, linter, validator,
+  render, a recompute from the raw data), a source fetched this session, a held-out case
+  set, or a reviewer that did not write it. Write it as `— judge: <what>`. When no outside
+  judge exists, write `judge: none available (self-check)` rather than passing a self-read
+  check off as external. A trivial Chat one-liner may omit it.
 - **`hillclimb` mode (default for repeatable surfaces).** Fires when the thing built
   runs again (skill, prompt, agent, tool description, hook, workflow script, pipeline,
   template, extraction step), on any Workflow run, and on any optimize / iterate /
@@ -568,12 +653,23 @@ above are authoritative on their own.
     word." Neither affects firing.
 11. Reviewer ordering on WRITING, COMMUNICATION, and DOCUMENT tasks: register
     reviewer (academic or casual) → writing-anti-ai → receipts, with
-    `[writing-review: …]` directly above `[anti-AI: …]`, both under the block.
+    `[writing-review: …]` directly above `[anti-AI: …]`, both under the block in the
+    response that carries the drafted prose (not above a draft that does not exist yet).
     Neither affects firing.
 12. Eval Contract: every block carries `<eval>`. `check` mode (2–5 pass/fail checks,
-    tally stated at closeout) on every task; `hillclimb` mode (train/test split, one
+    at least one with a named outside judge, tally stated at closeout) on every task; `hillclimb` mode (train/test split, one
     change per round, keep only when both sets improve, stop after 2–3 flat rounds) by
     default on repeatable surfaces and Workflow runs. Content gate; never affects firing.
+13. Long-Run Harness: a run that may outlive one context or session gets preflight,
+    bounded steps, a handoff note in the plan file, a check ledger, and a partial stop
+    with the exact remaining work. Never weaken a check to get a pass; never retry an
+    external write without checking whether the first landed. Content gate; never
+    affects firing.
+14. Depth Pass: on Document, ANALYSIS, CODE, RESEARCH-DESIGN, and system-engineering
+    blocks, answer expert move, rawest material, methods and instruments, and outside
+    judge, and write each answer into the element it changes. Deeper, not bigger: no new
+    deliverable, and a scope-widening move is one sentence under the block. Shown above
+    the block only on an explicit cue. Content gate; never affects firing.
 
 ## Gotchas / Known Failure Modes
 

@@ -5,6 +5,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning is calendar-based (`YYYY.M.D`), matching the skill's own dated version
 string rather than imposing a semantic version it does not have.
 
+## [2026.10.16] - 2026-10-16
+
+### Added
+- Depth Pass, from Felix Rieseberg's essay "How to be more ambitious: A tutorial for humans with models" and its "deeper, not bigger" prompt. On document, analysis, code, research-design, and skill-engineering blocks, the drafter answers four questions: the expert move the prompt does not ask for, the rawest material reachable, the specific methods and tools, and the outside judge. Each answer goes into the element it changes, with no new deliverable. Two moves apply only when the prompt calls for them: test a stated causal premise against the raw material, and state a specific measurable bar. When the user asks for a deeper version, the four answers appear above the block.
+- An outside-judge rule in the Eval Contract: at least one check is decided by something other than the authoring model, written `— judge: <what>`, or the block says `judge: none available (self-check)`. In a 60-day audit of real blocks, 47% of evals had no such check.
+- Long-Run Harness (written 2026-10-07, first released here): preflight, bounded steps, a handoff note in the plan file, a check ledger that is never weakened to get a pass, and a partial stop that names the remaining work. It also adds a retry rule (change something before retrying; check whether an external write landed before repeating it).
+- `references/depth-pass.md` (sources, audit numbers, kept and rejected items) and Rules 13 and 14.
+
+### Changed
+- `<role>` names the job and what that professional does, not a persona to imitate. Alignment names the outcome the deliverable serves as a verb.
+- `<inputs>` placeholders are written as NAME: description lines, never nested tags.
+- The deep-research route checks the session's skill list instead of asserting the skill is absent.
+- Tested on 15 real prompts (12 common, 3 edge) across three runners in two rounds. The pass rate rose from 80% to 89%, improving on both the tuning set and the held-out set. No trigger, skip, question-matrix, or hook change.
+
 ## [2026.9.28] - 2026-09-28
 
 ### Added

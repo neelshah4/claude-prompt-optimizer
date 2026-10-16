@@ -5,6 +5,28 @@ disclosure). Entries are historical records, reproduced verbatim: they describe 
 past pass did and are NOT current instructions. Do not edit a past entry to match
 current behavior.
 
+## Depth Pass + outside judge (2026-10-16)
+
+DEPTH PASS (2026-10-16): from Rieseberg's "How to be more ambitious" essay and its
+     four-question "deeper, not bigger" prompt. New `### Depth Pass` content gate (expert
+     move, rawest material, methods and instruments, outside judge; premise test and
+     specific hard target when called for; answers shown above the block only on an
+     explicit cue), an outside-judge clause in Eval Contract `check` mode with the
+     `— judge:` marker, the outcome-as-verb line in the Alignment dimension, the
+     no-role-play wording for `<role>`, and Rule 14. Chosen from a 60-day transcript
+     audit: 47% of evals had no outside judge. Kept/rejected table and the audit numbers
+     in references/depth-pass.md. Skip and fire semantics unchanged, so no hook change.
+
+## Long-Run Harness (2026-10-07)
+
+LONG-RUN HARNESS (2026-10-07): imported the gaps from a Karpathy-autoresearch-inspired
+     seven-layer harness prompt. New `### Long-Run Harness` content gate (preflight,
+     bounded steps, handoff note in the plan file, partial stop), a check ledger and a
+     no-weakening rule in Eval Contract `check` mode, a retry/idempotent-write clause in the
+     Refine drafting bullet, Rule 13, and a simpler-on-tie line in eval-hillclimb.md.
+     Kept/rejected table in completion-discipline.md. Skip and fire semantics unchanged,
+     so no hook change.
+
 ## Eval Contract + hillclimb default (2026-09-28)
 
 EVAL CONTRACT (2026-09-28): added a required `<eval>` element to the block schema and an

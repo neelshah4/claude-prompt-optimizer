@@ -27,7 +27,9 @@ becomes the first case.
 Write each check so the answer can be read off the artifact or a tool output: "all 12
 rows have a source URL", "word count ≤ 300", "script exits 0 on the sample file", "every
 aim names a primary endpoint". Never a 1–5 quality scale; a scale drifts run to run and
-cannot fail. Run the checks before the closeout and state the tally ("4/4 checks
+cannot fail. At least one check names an outside judge (`— judge: <what>`): a tool
+run, a fetched source, a held-out set, or a reviewer that did not write the artifact;
+see `depth-pass.md`. Run the checks before the closeout and state the tally ("4/4 checks
 passed", or which failed and why). When the Completion Contract fires, its countable
 done-condition is one of the checks.
 
@@ -65,6 +67,8 @@ done-condition is one of the checks.
 4. **Keep** the change only if train and test both improve beyond run-to-run noise.
    **Revert** if only train improves (overfitting) or if either set regresses.
 5. Log the round: change, train score, test score, cost per case, kept or reverted.
+   A reverted change is not retried without a new reason. When two variants score
+   within noise, keep the simpler one.
 6. **Stop** after 2–3 rounds with no gain, when no single fix could move the score past
    the noise margin, or at the budget cap.
 7. **At the stall, sort the remaining failures by root cause.** Some are real defects to

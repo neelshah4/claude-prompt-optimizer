@@ -38,16 +38,18 @@ A block at the top of the first response for each task, with its own pass/fail e
 ```xml
 <optimized_prompt>
   <role>Who Claude is for this task, and what the task is.</role>
-  <inputs>Named placeholders for dynamic content, or "none".</inputs>
+  <inputs>Named placeholders for dynamic content, as NAME: description lines, or "none".</inputs>
   <instructions>Numbered steps, ordered the way a person would work through it.</instructions>
-  <eval>check or hillclimb, plus 2–5 pass/fail checks read off the finished output.</eval>
+  <eval>check or hillclimb, plus 2–5 pass/fail checks; at least one names its outside judge.</eval>
   <critical>At most two constraints whose violation most damages the deliverable.</critical>
 </optimized_prompt>
 ```
 
 Two elements are conditional. `<examples>` appears only when a worked example sharpens the spec. `<suggested_goal>` appears only on document-producing tasks, carrying a pasteable `/goal` line.
 
-**Every block carries an eval.** `<eval>` lists 2–5 yes/no checks that can be read off the output or a tool result ("script exits 0 on the sample", "≤ 300 words"), never a 1–5 quality scale, and the response states the tally before it closes. When the thing being built runs again (a skill, prompt, agent, workflow, or pipeline), the mode is `hillclimb`: build cases from real use, split them into train and held-out test sets, change one thing per round, keep a change only when both sets improve, and stop after 2–3 flat rounds. The method follows Anthropic's post on automating eval design and hillclimbing; the full protocol is in `skills/prompt-optimizer/references/eval-hillclimb.md`.
+**Every block carries an eval.** `<eval>` lists 2–5 yes/no checks that can be read off the output or a tool result ("script exits 0 on the sample", "≤ 300 words"), never a 1–5 quality scale, and the response states the tally before it closes. At least one check names an outside judge, written `— judge: <what>`: something other than the model that made the output, such as a test run, a recompute from the raw data, a source fetched in the session, or a reviewer that did not write it. When no such judge exists, the block says so. When the thing being built runs again (a skill, prompt, agent, workflow, or pipeline), the mode is `hillclimb`: build cases from real use, split them into train and held-out test sets, change one thing per round, keep a change only when both sets improve, and stop after 2–3 flat rounds. The method follows Anthropic's post on automating eval design and hillclimbing; the full protocol is in `skills/prompt-optimizer/references/eval-hillclimb.md`.
+
+**Deeper, not bigger.** On document, analysis, code, research-design, and skill-engineering tasks, the block answers four questions while it is drafted: what a top professional would do that the prompt does not ask for, the rawest material they would start from, the specific methods and tools they would use, and what besides the model or the user would show the result is right. Each answer replaces a vague step or sharpens `<inputs>` and `<eval>`; none adds a deliverable. Ask for "a deeper version" and the four answers appear above the block. The questions come from Felix Rieseberg's essay "How to be more ambitious: A tutorial for humans with models" (October 2026); `skills/prompt-optimizer/references/depth-pass.md` lists what was kept and what was left out.
 
 **The schema is closed.** Only these element names, ever. Invented tags and dropped `<inputs>` are bugs, not stylistic variation. The closure is what makes the block skimmable — you learn where to look once.
 
@@ -75,7 +77,8 @@ Two elements are conditional. `<examples>` appears only when a worked example sh
        actually differs.
   </instructions>
   <eval>check: guideline and GRADE strength stated before mechanism; all four
-  outcomes compared; every adult-derived claim labeled adult.</eval>
+  outcomes compared; every adult-derived claim labeled adult; each cited
+  recommendation matches the guideline text — judge: the guideline fetched this session.</eval>
   <critical>Do not promote an association to a causal claim. Pediatric-first
   evidence hierarchy — adult data is labeled as adult data.</critical>
 </optimized_prompt>
@@ -288,7 +291,7 @@ If you want real scored optimization, use DSPy or GEPA directly. This is a human
 
 ## Version
 
-`2026.8.22`, matching the skill's declared version `v2026-08-22`. This project uses calendar versioning because the skill itself is date-versioned. See [CHANGELOG.md](CHANGELOG.md).
+`2026.10.16`, matching the skill's `lastReviewed: 2026-10-16`. This project uses calendar versioning because the skill itself is date-versioned. See [CHANGELOG.md](CHANGELOG.md).
 
 ## Contributing
 
