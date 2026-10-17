@@ -16,7 +16,7 @@ description: >-
   though a continuation adding new work fires; or a block longer than the
   answer. Emits a prompt block with a built-in eval per task.
   Supersedes any bundled/upstream variant.
-lastReviewed: 2026-10-16
+lastReviewed: 2026-10-17
 ---
 # Prompt Optimizer
 
@@ -193,7 +193,7 @@ User prompt arrives
 | RESEARCH-DESIGN | Study design, protocols, grant aims; *defer to grant-reviewer for R01/K* |
 | GENERAL | Recommendations, comparisons, explanations, multi-step reasoning |
 
-WRITING, COMMUNICATION, and DOCUMENT tasks carry the mannered-prose and craft lines in
+WRITING, COMMUNICATION, DOCUMENT, and PRESENTATION tasks carry the mannered-prose and craft lines in
 `<instructions>` (see Refine).
 
 **Handoff protocol**: if the task activates another skill with its own intake or
@@ -208,6 +208,7 @@ double-intake. Route by this selector:
 | Manuscript-class stats on a **new dataset** | biostat-kickoff (then stats-plan-reviewer) |
 | Live patient scenario / physiology / drug-vent-hemodynamics | icu-clinical-consult |
 | Buy/hold/sell or position-sizing on a security | personalization-gate |
+| Visual deliverable: deck, one-pager, poster, artifact, dashboard, chart, social/OG/email asset | the installed visual-design skill, if any (it runs its own pre-flight); otherwise draft inline |
 | Any deliverable that will name citations | clinical-citation-audit / citation-verification |
 | Drafting or editing a manuscript, abstract, grant narrative, reviewer response, IRB free text, or cover letter (the draft itself, not the review panel) | draft first, then `academic-writing-reviewer` if present, then writing-anti-ai |
 | Email, memo, Slack or chat reply, handoff note, README, executive summary | draft first, then `casual-writing-reviewer` if present, then writing-anti-ai |
@@ -242,10 +243,12 @@ intake cost up front. Chat answers are cheap to refine, so don't stall.
 
 | Channel | Signals | Min Q | Max Q |
 |---------|---------|-------|-------|
-| **Document / Artifact** | Creates .docx, .pdf, .pptx, .xlsx, .html deliverable; manuscript, abstract, grant aims, slide deck, poster, report | **1** | **5** |
+| **Document / Artifact** | Creates .docx, .pdf, .pptx, .xlsx, .html deliverable; manuscript, abstract, grant aims, slide deck, poster, report; edits to files in a repo or config (skill, hook, script, settings, bug fix, push) | **1** | **5** |
 | **Chat** | Explanation, quick analysis, recommendation, code snippet, short answer that stays in conversation | **0** | **2** |
 
-Presentation and Research-Design tasks are always Document channel.
+Presentation and Research-Design tasks are always Document channel, and so are
+repo and file-edit tasks (skill edits, bug fixes, config changes, push): the
+product is a changed file that costs a re-run to redo.
 
 **Channel tiebreaker** (channel is the dominant question-count driver, so resolve
 it explicitly): share / send / post / file / deck / poster / one-pager /
@@ -302,8 +305,10 @@ cheaper to ask now than to regenerate later.
 **User override (always wins)**: "just do it," "just give me," "just
 list/show," "stop asking," "you decide," "proceed," "go ahead," "autonomously,"
 "keep going," or similar end the intake loop. A user-specified question count
-overrides the matrix in both directions. "Ask me 5–10," "quiz me" raise the
-cap; "just"-class lower it to 0 Q. A "just give me X" caps questions at 0 but
+overrides the matrix in both directions. Precedence: user override, then the
+matrix count, then any capped-stop question (Refine, stop rule d), which never
+exceeds either. "Ask me 5–10," "quiz me" raise the cap; "just"-class lower it
+to 0 Q. A "just give me X" caps questions at 0 but
 does not by itself suppress firing; the skill still fires and shows the block,
 proceeding without a clarifying question.
 
@@ -366,10 +371,10 @@ has a target (curse of knowledge: the writer cannot see what the reader
 lacks); state directives affirmatively; give `<role>` the job and what that professional does, never a persona or a voice to imitate (role-play changes vocabulary, not method); and leave
 an `<inputs>` slot for any exemplar rather than inventing one. These sharpen
 the block; they never expand it past what the task needs. **Remove all
-mannered prose.** On WRITING, COMMUNICATION, and DOCUMENT tasks, the
-generated `<instructions>` carry one line: "Remove all mannered prose: say
-what you mean, and use the literal phrase where one exists." One line, added
-once, exempt from the Economy pass. **Craft line.** The same tasks carry a
+mannered prose.** On WRITING, COMMUNICATION, DOCUMENT, and PRESENTATION tasks (a
+deck's slide and speaker-note copy is prose), the generated `<instructions>` carry
+one line: "Remove all mannered prose: say what you mean, and use the literal
+phrase where one exists." One line, added once, exempt from the Economy pass. **Craft line.** The same tasks carry a
 second fixed line: "Lead with the point; open each sentence on what the
 reader already holds and end it on the new item; gloss every term of art for
 the named reader; prefer the short everyday word." Added once, exempt from
@@ -388,11 +393,14 @@ the Economy pass. Source: the writing-craft canon (Orwell, Williams, Zinsser, Pi
 4. **Stop** when any holds: (a) all five score 3; (b) a pass yields no
    material improvement (convergence); (c) 3 passes completed; or (d)
    **CAPPED, not converged**: a dimension cannot reach 3 because the input is
-   absent and inventing it would fabricate. A capped stop must (1) name the
-   missing input as an `<inputs>` placeholder and (2) raise it as a
-   clarifying question, rather than ship a thin block. Scope to
-   genuinely-missing input; gains plateau fast, so a 3rd pass is rarely
-   needed.
+   absent and inventing it would fabricate. A capped stop names the
+   missing input in `<inputs>` as a placeholder that carries the assumption the
+   block runs on (`NAME: description (assumed: X)`), rather than shipping a thin
+   block. It adds no question of its own: the Phase 0.D count and a user override
+   govern. An open matrix slot goes to the capped input before any other question;
+   at 0 Q (Chat 13–15, or any "just"-class override), state the assumption and
+   proceed. Scope to genuinely-missing input; gains plateau fast, so a 3rd pass is
+   rarely needed.
 
 The loop runs on every triggered turn (Chat and Document alike). Because it
 stops on convergence, an already-strong prompt resolves in a single pass, so
@@ -645,7 +653,7 @@ above are authoritative on their own.
    When it fires, the final `<instructions>` step is the countable
    done-condition; derived numbers are re-measured at report time or labeled
    unverified; partial coverage is declared. Canonical home: Completion Contract.
-10. Mannered-prose and craft lines: WRITING, COMMUNICATION, and DOCUMENT blocks
+10. Mannered-prose and craft lines: WRITING, COMMUNICATION, DOCUMENT, and PRESENTATION blocks
     carry two fixed lines — "Remove all mannered prose: say what you mean, and
     use the literal phrase where one exists," and "Lead with the point; open
     each sentence on what the reader already holds and end it on the new item;

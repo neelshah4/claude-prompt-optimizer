@@ -5,6 +5,23 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning is calendar-based (`YYYY.M.D`), matching the skill's own dated version
 string rather than imposing a semantic version it does not have.
 
+## [2026.10.17] - 2026-10-17
+
+### Changed
+- A capped input (one the prompt cannot supply) is now written into `<inputs>` as a placeholder with the assumption the block runs on, such as `NAME: description (assumed: X)`. It adds no question of its own. Precedence is stated: a user override first, then the question count from the channel and score matrix, then any capped-stop question.
+- Edits to files in a repo or config (skill edits, bug fixes, config changes, a push) are classed as the Document channel, so they get the Document question range and the `/goal` suggestion.
+- The handoff selector gains a visual-deliverable row that routes decks, one-pagers, posters, dashboards, and similar assets to an installed visual-design skill, if there is one.
+- Presentation tasks now carry the two fixed prose lines (remove mannered prose; lead with the point), since slide and speaker-note copy is prose.
+- Tested on 25 prompts (15 earlier cases plus 10 new real prompts, each new one run twice) against a control run of the previous skill, with a grader written before the runs. Every target check rose on both the tuning set and the held-out set. One cost: terse repo requests now fall in the Document range and can ask up to 5 questions; a user override still gives zero. No trigger, skip, or hook change.
+
+## [2026.10.16.1] - 2026-10-16
+
+### Changed
+- A capped input (one that cannot be filled without inventing it) becomes an `<inputs>` placeholder carrying its assumption, written `NAME: description (assumed: X)`, and adds no question of its own. Precedence for the question count is user override, then the channel x score matrix, then any capped-stop question.
+- Repo and file-edit tasks (skill edits, bug fixes, config changes, a push) are Document channel. Terse repo asks can now get up to five intake questions; "just do it" still gives none.
+- The handoff selector gains a visual-deliverable row that routes to the installed visual-design skill, if any. PRESENTATION tasks now carry the two fixed prose lines.
+- Tested against a control on the previous version over 25 real cases with a train/held-out split. Every target check rose on both sets. No trigger, skip, or hook change.
+
 ## [2026.10.16] - 2026-10-16
 
 ### Added

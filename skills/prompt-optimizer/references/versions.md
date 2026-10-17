@@ -5,6 +5,31 @@ disclosure). Entries are historical records, reproduced verbatim: they describe 
 past pass did and are NOT current instructions. Do not edit a past entry to match
 current behavior.
 
+## Routing fixes 111-113 (2026-10-16b)
+
+ROUTING FIXES (2026-10-16b): resolves skill-observations 111, 112, 113 (open since the
+     depth-pass test). (111) Refine stop rule (d) now says a capped input becomes an
+     `<inputs>` placeholder carrying its assumption (`NAME: description (assumed: X)`) and
+     adds no question of its own; Phase 0.D states the precedence: user override, then the
+     matrix count, then any capped-stop question. (112) Repo and file-edit tasks (skill
+     edits, bug fixes, config changes, push) are Document channel, in the channel table and
+     below it. (113) Handoff selector gains a visual-deliverable row (the installed visual-design skill),
+     and PRESENTATION tasks carry the two fixed prose lines (Phase 0.A, Refine, Rule 10).
+     Test: 25 cases (15 from the 2026-10-16 harness + 10 new real prompts, each new case
+     run twice), Sonnet runners on this skill vs a control runner set on the pre-edit
+     skill, pre-registered programmatic grader (`grade2.py`), train/held-out split.
+     Target checks, control -> candidate, train / held-out: 111 assumption marker 2/4 ->
+     4/4 and 1/2 -> 2/2 (question-count precedence was already 6/6 on both, so (111) writes
+     down existing behavior and fixes the marker only); 112 Document channel + goal gate
+     3/6 -> 6/6 and 0/2 -> 2/2; 113 handoff 0/5 -> 5/5 and 0/4 -> 4/4, prose lines 1/5 ->
+     5/5 and 0/4 -> 2/4 (the two misses classed the task CODE, not PRESENTATION). Old
+     checks 155/164 -> 153/164 and 96/99 -> 95/99, all of the drop on the size-vs-real-block
+     check that Sonnet runners fail on any skill; mean block length +12% (the goal line and
+     the two prose lines). Cost to know: terse repo asks now fall in the Document cell, so
+     question counts rose by 3 on three of the five repo cases (2 -> 5, 2 -> 5, 1 -> 4); a user override still gives 0.
+     Not tested: the clause that an open matrix slot goes to the capped input first.
+     Skip and fire semantics unchanged, so no hook change.
+
 ## Depth Pass + outside judge (2026-10-16)
 
 DEPTH PASS (2026-10-16): from Rieseberg's "How to be more ambitious" essay and its
