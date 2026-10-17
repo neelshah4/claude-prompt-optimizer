@@ -125,7 +125,7 @@ Or directly:
 
 ## Model support
 
-**Developed and tuned on Claude Opus 5.** The current release reflects a full retune during the Opus 5 migration, including a progressive-disclosure split that moved the question banks, worked examples, and version history into `references/` so the always-loaded body stays small.
+**Developed on Claude Opus 5 and retuned for Claude Opus 5.5.** The 2026.9.23 release fitted the drafting rules to Opus 5.5 (thinking is always on, `medium` is the default effort, and requests to reproduce reasoning are declined). The earlier Opus 5 migration added a progressive-disclosure split that moved the question banks, worked examples, and version history into `references/` so the always-loaded body stays small.
 
 **The design is model-agnostic and holds on every current Claude model** — Opus, Sonnet, Haiku, and Fable. Nothing in the skill pins a model ID, and the instruction-writing guidance is written as model-agnostic principle rather than as a workaround for one model's quirks. Pinning model IDs was an explicit anti-pattern during the migration: the previous approach left two dozen dead identifiers behind.
 
