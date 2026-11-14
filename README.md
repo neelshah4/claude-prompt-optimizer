@@ -33,21 +33,22 @@ This skill spends a few lines up front instead. The cost is bounded and visible;
 
 ## What you see
 
-A block at the top of the first response for each task, with its own pass/fail eval built in:
+A block at the top of the response to each prompt you type that carries a task, with its own pass/fail eval built in:
 
 ```xml
 <optimized_prompt>
   <role>Who Claude is for this task, and what the task is.</role>
   <inputs>Named placeholders for dynamic content, as NAME: description lines, or "none".</inputs>
-  <instructions>Numbered steps, ordered the way a person would work through it.</instructions>
-  <eval>check or hillclimb, plus 2–5 pass/fail checks; at least one names its outside judge.</eval>
+  <instructions>Numbered steps that add to your words: the success criterion, the reader, the method, the order.</instructions>
+  <assumptions>Each decision made without asking, one line each, or "none".</assumptions>
+  <eval>check or hillclimb, plus 1–3 pass/fail checks; at least one names its outside judge.</eval>
   <critical>At most two constraints whose violation most damages the deliverable.</critical>
 </optimized_prompt>
 ```
 
-Two elements are conditional. `<examples>` appears only when a worked example sharpens the spec. `<suggested_goal>` appears only on document-producing tasks, carrying a pasteable `/goal` line.
+One element is conditional: `<examples>` appears only when a worked example sharpens the spec. `<assumptions>` lists what the block decided without asking, including anything taken from memory, so a wrong default is visible and one reply corrects it.
 
-**Every block carries an eval.** `<eval>` lists 2–5 yes/no checks that can be read off the output or a tool result ("script exits 0 on the sample", "≤ 300 words"), never a 1–5 quality scale, and the response states the tally before it closes. At least one check names an outside judge, written `— judge: <what>`: something other than the model that made the output, such as a test run, a recompute from the raw data, a source fetched in the session, or a reviewer that did not write it. When no such judge exists, the block says so. When the thing being built runs again (a skill, prompt, agent, workflow, or pipeline), the mode is `hillclimb`: build cases from real use, split them into train and held-out test sets, change one thing per round, keep a change only when both sets improve, and stop after 2–3 flat rounds. The method follows Anthropic's post on automating eval design and hillclimbing; the full protocol is in `skills/prompt-optimizer/references/eval-hillclimb.md`.
+**Every block carries an eval.** `<eval>` lists 1–3 yes/no checks that can be read off the output or a tool result ("script exits 0 on the sample", "≤ 300 words"), never a 1–5 quality scale, and the checks run as the last step of the work, with the tally stated in the closeout. At least one check names an outside judge, written `— judge: <what>`: something other than the model that made the output, such as a test run, a recompute from the raw data, a source fetched in the session, or a reviewer that did not write it. When no such judge exists, the block says so. When the thing being built runs again (a skill, prompt, agent, workflow, or pipeline), the mode is `hillclimb`: build cases from real use, split them into train and held-out test sets, change one thing per round, keep a change only when both sets improve, and stop after 2–3 flat rounds. The method follows Anthropic's post on automating eval design and hillclimbing; the full protocol is in `skills/prompt-optimizer/references/eval-hillclimb.md`.
 
 **Deeper, not bigger.** On document, analysis, code, research-design, and skill-engineering tasks, the block answers four questions while it is drafted: what a top professional would do that the prompt does not ask for, the rawest material they would start from, the specific methods and tools they would use, and what besides the model or the user would show the result is right. Each answer replaces a vague step or sharpens `<inputs>` and `<eval>`; none adds a deliverable. Ask for "a deeper version" and the four answers appear above the block. The questions come from Felix Rieseberg's essay "How to be more ambitious: A tutorial for humans with models" (October 2026); `skills/prompt-optimizer/references/depth-pass.md` lists what was kept and what was left out.
 
@@ -76,9 +77,11 @@ Two elements are conditional. `<examples>` appears only when a worked example sh
     4. Close with the specific patient phenotype, if any, where the choice
        actually differs.
   </instructions>
-  <eval>check: guideline and GRADE strength stated before mechanism; all four
-  outcomes compared; every adult-derived claim labeled adult; each cited
-  recommendation matches the guideline text — judge: the guideline fetched this session.</eval>
+  <assumptions>The reader is a pediatric intensivist. No patient data was supplied,
+  so this is an evidence summary, not a bedside recommendation.</assumptions>
+  <eval>check: guideline and GRADE strength stated before mechanism; every
+  adult-derived claim labeled adult; each cited recommendation matches the
+  guideline text — judge: the guideline fetched this session.</eval>
   <critical>Do not promote an association to a causal claim. Pediatric-first
   evidence hierarchy — adult data is labeled as adult data.</critical>
 </optimized_prompt>
@@ -161,7 +164,7 @@ Length alone is necessary, not sufficient. A four-sentence status check does not
 4. **Dense clinical consults** — fires through the specialist handoff.
 5. **Short but substantive** — "give me a one-sentence hypothesis and where to put it in the aims."
 
-**Skip categories override everything.** Greetings; bare acknowledgments; single-fact lookups with no synthesis; bare yes/no; bare definitions; status and verification checks; single deterministic commands; background-task notifications; in-prompt continuations and micro-edits; and any case where the block would run longer than the answer.
+**Skip categories override everything.** Greetings; bare acknowledgments; single-fact lookups with no synthesis; bare yes/no; bare definitions; status and verification checks; single deterministic commands; background-task notifications and other turns no person started (agent reports, compaction summaries, scheduled-task starts); pure continuations and micro-edits under 25 words; and any case where the block would run longer than the answer. A follow-up of 25 words or more that carries answers, decisions or new instructions gets its own block, which compiles them into the working spec.
 
 **When genuinely ambiguous, it fires.** A superfluous block costs a few lines. A missed one costs the whole optimization. Only the hard skips survive ambiguity.
 
@@ -244,8 +247,6 @@ These are the instruction-writing moves the skill applies when it drafts a block
 
 **The handoff table assumes companion skills.** The skill defers intake to specialists — grant review, manuscript review, clinical consult, citation verification. If you do not have those installed, the handoff rows are inert and the skill runs its own intake. Nothing breaks; it just does the work itself.
 
-**`/goal` composes with this.** prompt-optimizer specifies *what to do*; `/goal` specifies *when to stop*. On document tasks the block includes a pre-filled, pasteable `/goal` line. It never runs `/goal` for you, because setting one starts a loop and that should be your decision.
-
 ---
 
 ## Troubleshooting
@@ -258,7 +259,7 @@ These are the instruction-writing moves the skill applies when it drafts a block
 
 **It asked five questions and I just wanted a quick answer.** Say "just do it". The count drops to zero immediately and it proceeds with assumptions stated.
 
-**It re-displays the block on every turn.** It should appear on the first substantive response per task only. Re-display on follow-ups is the most common over-fire; report it.
+**It shows a block on my follow-ups.** Since 2026.11.14 that is intended for a follow-up of 25 words or more that carries answers, decisions or new instructions. Pure continuations and micro-edits under 25 words get none; a block on one of those is an over-fire, so report it.
 
 **A skill I don't have is named in a handoff.** Harmless — the row is inert. Tell it to proceed inline.
 
@@ -268,7 +269,7 @@ These are the instruction-writing moves the skill applies when it drafts a block
 
 The block is a typed input → output contract — a DSPy-style *signature* applied one-shot, not compiled.
 
-- **DSPy signatures.** Khattab et al., *DSPy: Compiling Declarative Language Model Calls into Self-Improving Pipelines*, [arXiv:2310.03714](https://arxiv.org/abs/2310.03714) (2023). The five-element schema borrows the typed-signature idea and nothing else.
+- **DSPy signatures.** Khattab et al., *DSPy: Compiling Declarative Language Model Calls into Self-Improving Pipelines*, [arXiv:2310.03714](https://arxiv.org/abs/2310.03714) (2023). The closed schema borrows the typed-signature idea and nothing else.
 - **Principled instructions.** Bsharat, Myrzakhan, and Shen, *Principled Instructions Are All You Need for Questioning LLaMA-1/2, GPT-3.5/4*, [arXiv:2312.16171](https://arxiv.org/abs/2312.16171) (2023). Source of the transferable instruction-writing moves: name the audience, decompose into ordered steps, state directives affirmatively, assign a role, leave a slot for a user-supplied exemplar.
 - **Perspective-guided question asking.** Shao et al., *Assisting in Writing Wikipedia-like Articles From Scratch with Large Language Models* (STORM), [arXiv:2402.14207](https://arxiv.org/abs/2402.14207), NAACL 2024. Shapes the question banks: asking from a named perspective produces better questions than asking generically.
 - **Anthropic's Prompting 101.** The block's ordering — task description, dynamic content, detailed instructions, then a closing restatement of what matters — mirrors that structure directly.
@@ -283,7 +284,6 @@ If you want real scored optimization, use DSPy or GEPA directly. This is a human
 
 - **No scored iteration.** See above.
 - **No auto-generated few-shot examples.** `<examples>` appears only when a worked example genuinely sharpens the spec.
-- **It does not run `/goal` for you.** It suggests; you opt in.
 - **It does not override your instructions.** It shapes the request, and yours wins on every conflict.
 - **It does not evaluate output quality.** It specifies the task. Whether the result is good is a separate question, and one this skill has no opinion about.
 

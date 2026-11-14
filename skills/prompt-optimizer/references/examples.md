@@ -30,6 +30,11 @@ prompt-optimizer then synthesizes:
        outcome, feasibility signal.
     4. Close with an impact statement framed in the reviewer's language.
   </instructions>
+  <assumptions>Mechanism R01 and a three-aim structure, from the grant-reviewer
+  intake; no preliminary-data claims beyond what the user supplies.</assumptions>
+  <eval>check. 1) Three aims, each with hypothesis, approach, outcome and
+  feasibility signal. 2) No aim depends on another succeeding. — judge:
+  grant-reviewer panel read of the aims page.</eval>
   <critical>Each aim must be independently fundable. Reviewer-script lens
   throughout. No aim depends on another succeeding.</critical>
 </optimized_prompt>
@@ -58,6 +63,10 @@ dropping the total to **9** → 2 Q for Chat channel.
        not technical detail).
     3. Close with a proposed next step (15-min meeting).
   </instructions>
+  <assumptions>Audience = division chief, taken from memory of prior work, not
+  from this prompt. Formal tone and a meeting request, from the two answers.</assumptions>
+  <eval>check. 1) Word count under 150. 2) The ask appears in the first
+  sentence. — judge: word-count tool.</eval>
   <critical>Under 150 words. Professional-collegial tone. No throat-clearing
   preamble.</critical>
 </optimized_prompt>
@@ -94,6 +103,11 @@ After the answer:
     4. Conclusions (≤100w): emphasis chosen by user (e.g., external
        validity / deployment readiness / subgroup performance).
   </instructions>
+  <assumptions>Reviewer lens = the user's pick; emphasis in Conclusions left to
+  the user's data.</assumptions>
+  <eval>check. 1) Word count 500 or under. 2) Every number traces to the
+  supplied data. — judge: word-count tool and a re-read against the prompt's
+  numbers.</eval>
   <critical>500 words max. Structured (Background/Methods/Results/
   Conclusions). No references. Reviewer lens consistent across all four
   sections.</critical>
@@ -115,7 +129,8 @@ pursue this?"
 **Action**: Length > one sentence → trigger. Task = GENERAL. Channel = Chat. Scored
 based on message content. Proceed with 0–2 Q depending on score. If the
 message is rich with explicit context (score 13+), skip Phase 0 questions
-and go straight to the optimized_prompt block.
+and go straight to the optimized_prompt block, which carries its
+`<assumptions>` and `<eval>` elements like any other.
 
 ### Example 5: Uncertainty Override Loop
 
@@ -135,4 +150,5 @@ Follow-up batch (2 more Q): which sub-topics to emphasize, data-to-
 narrative ratio.
 
 After follow-up: score = 14, uncertainty = 10%. Synthesize
-`<optimized_prompt>` and proceed to build.
+`<optimized_prompt>` (with `<assumptions>` listing the template and visual-style
+defaults taken without asking, and a 1–3 check `<eval>`) and proceed to build.

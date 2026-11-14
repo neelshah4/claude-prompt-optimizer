@@ -1,7 +1,8 @@
 #!/bin/sh
 # Deterministic prompt-optimizer directive (hardened 2026-06-07; precision pass 2026-06-07b;
 # skip #9 added 2026-07-03; pre-filter gate added 2026-07-09; additionalContext payload
-# rewritten 2026-07-12, conversion-enforcement pass).
+# rewritten 2026-07-12, conversion-enforcement pass; 2026-11-14 human-turns-only a0 markers,
+# additionalContext skip list aligned to the follow-up rule, bare-continuation suppression).
 #
 # Same-change-set contract (three-way): this nudge hook, the new Stop hook
 # prompt-optimizer-stop-check.sh (the fire-rate backstop that audits a finished turn), and
@@ -26,7 +27,7 @@ prompt=$(printf '%s' "$input" | python3 -c 'import sys,json; print(json.load(sys
 
 emit() {
   cat <<'JSON'
-{"hookSpecificOutput":{"hookEventName":"UserPromptSubmit","additionalContext":"[prompt-optimizer] This prompt carries a task unless it matches a skip category. Invoke the prompt-optimizer skill first and put its 5-element optimized_prompt block at the top of your first substantive response; before sending, verify it is present and prepend it if missing. Skip categories (they override the length trigger): pure greeting; bare ack/continuation with no new task; background-task event (task-notification, system notification, monitor/agent result — no human instruction); one-sentence single-fact lookup with no synthesis; bare yes/no; bare definition; status/verification check (what's running, did it work, check my changes); single deterministic file/tool command (rename/move/run/install X); in-prompt continuation/follow-up edit (resume, continue, check it, make the Nth shorter) — but a continuation adding new substantive work fires; or a block longer than the answer. When uncertain, fire: under-firing is the failure mode. Prefer the personal prompt-optimizer skill over any bundled variant."}}
+{"hookSpecificOutput":{"hookEventName":"UserPromptSubmit","additionalContext":"[prompt-optimizer] Invoke the prompt-optimizer skill first on every human-typed prompt unless it matches a Skip category (greeting, bare ack, bare yes/no, status check, single deterministic command, pure continuation or micro-edit under 25 words, single-fact lookup, bare definition, block longer than the answer). A follow-up of 25 words or more that carries answers, decisions or new instructions fires. Put its optimized_prompt block at the top of the response. When uncertain, fire."}}
 JSON
 }
 
@@ -44,6 +45,22 @@ fi
 # text shape, so a human quoting one of these strings in a real request still fires.
 case "$prompt" in
   *"[SYSTEM NOTIFICATION - NOT USER INPUT]"*|*"<task-notification>"*|*"<local-command-stdout>"*)
+    exit 0 ;;
+esac
+
+# --- Step (a0b): other non-human turns (2026-11-14): subagent hand-back, compaction or
+# continuation summary, scheduled-task start, <side-sessions-event>, <ci-monitor-event>.
+# Matched only on the OPENING of the prompt (first ~400 characters, leading whitespace
+# dropped), so a human who quotes "[Subagent hand-back]" or a tag mid-message still fires.
+# Real openings (transcripts, 2026-11): "Another Claude session sent a message:\n<agent-message
+# from=...>\n[Subagent hand-back] ...", "This session is being continued from a previous
+# conversation ...", "<scheduled-task name=... file=...>". The two event tags are documented as
+# genuine only as their own message; no live payload of those two was found in 60 transcripts.
+head=$(printf '%s' "$prompt" | head -c 400 | tr -d '\r' | awk 'NF{f=1} f' | sed 's/^[[:space:]]*//')
+case "$head" in
+  "Another Claude session sent a message"*|"<agent-message from="*|\
+  "This session is being continued from a previous conversation"*|\
+  "<scheduled-task"*|"<side-sessions-event"*|"<ci-monitor-event"*)
     exit 0 ;;
 esac
 
@@ -75,10 +92,14 @@ fi
 GREETING_RE='^(hi|hey|hello|good (morning|afternoon|evening)|yo|sup|howdy)[.!\ ]*$'
 ACK_RE='^((thanks?|thank you|ok(ay)?|got it|great|perfect|nice|cool|sounds good|yep|yeah|nope|sure|k|done)[,.!]?[[:space:]]*)+$'
 YESNO_RE='^(yes|no)[.!\ ]*$'
+# Defined here, above its use: an unset pattern is an empty regex, which matches every prompt
+# and silently suppressed all short prompts (caught 2026-11-14 before ship).
+CONT_BARE_RE='^(continue|resume|go on|keep going|carry on)[.!\ ]*$'
 
 if printf '%s' "$lower" | grep -Eq "$GREETING_RE" \
   || printf '%s' "$lower" | grep -Eq "$ACK_RE" \
-  || printf '%s' "$lower" | grep -Eq "$YESNO_RE"; then
+  || printf '%s' "$lower" | grep -Eq "$YESNO_RE" \
+  || printf '%s' "$lower" | grep -Eq "$CONT_BARE_RE"; then
   exit 0
 fi
 

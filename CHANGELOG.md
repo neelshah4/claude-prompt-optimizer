@@ -5,6 +5,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning is calendar-based (`YYYY.M.D`), matching the skill's own dated version
 string rather than imposing a semantic version it does not have.
 
+## [2026.11.14] - 2026-11-14
+
+### Changed
+- The skill fires on every prompt a person types that carries a task. A follow-up of 25 words or more with answers, decisions or new instructions gets its own block; pure continuations and micro-edits under 25 words do not.
+- Both hooks ignore turns no person started: subagent reports, task notifications, compaction summaries and scheduled-task starts. The Stop hook's backstop covers any typed prompt of 25 words or more.
+- New `<assumptions>` element lists each decision the block made without asking, including anything taken from memory.
+- `<instructions>` carries only steps that add to the request: the success criterion, the reader, the method, the order.
+- `<eval>` goes from 2–5 checks to 1–3. They run as the last step of the work and the tally is stated in the closeout.
+- Intake gains a two-stage order for changes to a standing system or a strategy: research first, then options with pros and cons, then questions.
+- Tested with hook fixtures (51 checks) and eight fresh Sonnet runners graded by script (29 of 29 checks).
+
+### Removed
+- `<suggested_goal>` and the `/goal` handoff. In 50 sessions of the author's own use the line was offered 27 times and never used.
+
 ## [2026.10.17] - 2026-10-17
 
 ### Changed

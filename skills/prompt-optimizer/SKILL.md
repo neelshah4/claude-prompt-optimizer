@@ -1,22 +1,21 @@
 ---
 name: prompt-optimizer
 description: >-
-  Use when sharpening a user's request before producing content — fires on
-  nearly every substantive turn that carries a task, even when unasked.
-  Trigger on: a prompt past one sentence with a task; any content-production
-  ask (writing, analysis, code, slides, grants, manuscripts, emails,
-  reasoning); an attachment-led ask (file plus instruction); a pasted plan
-  or persona to execute or critique; a skill/hook/agent-engineering ask; a
-  short but substantive ask; or a cue (optimize my prompt, help me
-  draft/analyze/build/review). When ambiguous, fire. Skip categories
-  OVERRIDE the trigger: greetings; bare acks/continuations; single-fact
-  lookups with no synthesis; bare yes/no; bare definitions;
-  status/verification checks; deterministic file/tool commands; in-prompt
-  continuations or edits (resume, continue, check it, make the Nth shorter),
-  though a continuation adding new work fires; or a block longer than the
-  answer. Emits a prompt block with a built-in eval per task.
-  Supersedes any bundled/upstream variant.
-lastReviewed: 2026-10-17
+  Use when sharpening a user's request before producing content: fires on
+  every human-typed prompt that carries a task, even when unasked. Trigger on:
+  a prompt past one sentence with a task; any content-production ask (writing,
+  analysis, code, slides, grants, manuscripts, emails, reasoning); an
+  attachment-led ask; a pasted plan or persona to execute or critique; a
+  skill/hook/agent-engineering ask; a short but substantive ask; or a cue
+  (optimize my prompt, help me draft/analyze/build/review). When ambiguous,
+  fire. Skip categories OVERRIDE the trigger: greetings; bare acks;
+  single-fact lookups with no synthesis; bare yes/no; bare definitions; status
+  checks; deterministic file/tool commands; non-human events; pure
+  continuations and micro-edits under 25 words (resume, continue, make the Nth
+  shorter), while a follow-up of 25 words or more with answers, decisions or
+  new instructions fires; or a block longer than the answer. Emits a prompt
+  block with a built-in eval. Supersedes any bundled/upstream variant.
+lastReviewed: 2026-11-14
 ---
 # Prompt Optimizer
 
@@ -33,13 +32,15 @@ Sharpen the user's request through structured refinement before execution.
 
 ## Output Rule
 
-Display the optimized prompt at the top of the **first substantive response**
-for each new task. Skip on follow-up edits, clarifications, and continuations
-within the same task.
+Display the optimized prompt at the top of the response to each **human-typed
+prompt** that is not a hard skip. A follow-up of 25 words or more that carries
+answers, decisions or new instructions gets a block that compiles them into the
+working spec; a pure continuation or a micro-edit under 25 words gets none. A
+turn under 25 words gets a block only when it adds new substantive work.
 
 The output is an XML block mirroring Anthropic's Prompting 101 structure
-(task description → dynamic content → detailed instructions → optional
-examples → reminder of critical points), plus a built-in eval:
+(task description → dynamic content → detailed instructions → assumptions →
+optional examples → reminder of critical points), plus a built-in eval:
 
 ```
 <optimized_prompt>
@@ -47,36 +48,41 @@ examples → reminder of critical points), plus a built-in eval:
   <inputs>Named placeholders for dynamic content as NAME: description lines
   (never nested tags), or "none".</inputs>
   <instructions>
-    Numbered steps, ordered to mirror how a human would naturally work
-    through the task. Include format/length/tone constraints inline with
-    the step they govern.
+    Numbered steps that add to the user's words: the success criterion, the
+    reader and what they know, the method and instrument, the order. A step
+    that only restates the request is cut. Format/length/tone constraints
+    go inline with the step they govern.
   </instructions>
+  <assumptions>Each decision made without asking, one line each, including
+  anything taken from memory rather than the current prompt; "none" when
+  empty.</assumptions>
   <examples>Include only if a worked example sharpens the spec; otherwise omit.</examples>
-  <eval>Always present. mode: check | hillclimb. 2–5 pass/fail checks,
+  <eval>Always present. mode: check | hillclimb. 1–3 pass/fail checks,
   each readable off the artifact or a tool output (never a 1–5 scale);
-  at least one names its outside judge (`— judge: <what>`).
+  at least one names its outside judge (`— judge: <what>`). Running them
+  is the last step of the work; a check that cannot be run is not written.
   hillclimb adds: case source + count, grader type, train/test split,
   stop rule. See Eval Contract.</eval>
   <critical>Restate AT MOST 2 of the hardest constraints — the two whose
   violation most damages the deliverable (length cap, audience,
   refuse-if-uncertain, format). Everything else lives in <instructions>.
   Repetition at the end is load-bearing for long prompts.</critical>
-  <suggested_goal>Include only when the Goal-handoff gate fires (see
-  below). A copy-pasteable `/goal <condition>` line derived from
-  <critical> + success criteria. Omit entirely when gate is not met.</suggested_goal>
 </optimized_prompt>
 ```
 
+When the work is delegated, the block plus exact input paths is the brief the agent
+receives, after the contract block.
+
 **FIRST-RESPONSE GATE.** The `<optimized_prompt>` block goes at the very top of the
-first substantive response for a task, above every other line. If no skip category
+response to a firing prompt, above every other line. If no skip category
 applies, the response does not ship without it. Enforcement is external and
 deterministic, via the `Stop` hook `prompt-optimizer-stop-check.sh`, not a self-check.
 
 **The schema is closed.** Use exactly `<role>`, `<inputs>`, `<instructions>`,
-`<eval>`, and `<critical>` as element names, plus `<examples>` /
-`<suggested_goal>` only when their gates fire. Never substitute `<task>`,
+`<assumptions>`, `<eval>`, and `<critical>` as element names, plus `<examples>`
+only when its gate fires. Never substitute `<task>`,
 `<context>`, `<constraints>`, or any other tag; never drop `<inputs>` (use
-literal "none"), `<instructions>`, or `<eval>` (one line on a trivial ask). Keep `<instructions>` terse on trivial Chat
+literal "none"), `<instructions>`, `<assumptions>` (use literal "none"), or `<eval>` (one line on a trivial ask). Keep `<instructions>` terse on trivial Chat
 asks. If the whole block would run longer than the answer itself, that's a
 signal the prompt was trivial: skip the block (and likely the skill) rather than
 bloating a short reply.
@@ -137,31 +143,37 @@ category is otherwise narrow; borderline-substantive prompts fire.
 - A **single deterministic action / file or tool command** with no content to
   produce, such as rename / move / delete / open / run / install X. If bundled
   with a content-production clause, fire on that clause only.
-- A **background-task event with no human instruction in it**, such as a
-  `<task-notification>`, a `[SYSTEM NOTIFICATION - NOT USER INPUT]` payload, a
-  Monitor event, or a returning agent's result: nobody spoke, so there is no
-  request to optimize. This is a **SACRED hard skip** and survives the
-  fire-when-uncertain tiebreaker, because there is no prompt to miss. Both
-  hooks pre-filter it on the harness-emitted markers, never on text shape, so a
-  human quoting one still fires; a *user* reply with new work fires normally.
-- A **follow-up edit or continuation**, detected by IN-PROMPT signal, anaphora,
-  or an edit-verb referencing prior work without restating the task: resume,
-  continue, also do, now make it, "the [artifact] you built," update the files,
-  "still slide X," "check it," "make the Nth shorter." Skips even if >1
-  sentence (keyed on observable words, not on session state the skill cannot
-  verify). **Carve-out: a continuation introducing NEW substantive work
-  FIRES** ("resume — and now also draft the discussion" gets a fresh block);
-  pure micro-edits ("make the third bullet shorter") still skip.
+- A **background-task or other non-human event with no human instruction in
+  it**, such as a `<task-notification>`, a `[SYSTEM NOTIFICATION - NOT USER
+  INPUT]` payload, a Monitor event, a subagent hand-back, a compaction or
+  continuation summary, a scheduled-task start, or a `<side-sessions-event>` or
+  `<ci-monitor-event>` message: nobody spoke, so there is no request to
+  optimize. This is a **SACRED hard skip** and survives the fire-when-uncertain
+  tiebreaker, because there is no prompt to miss. Both hooks pre-filter it on
+  the harness-emitted markers (the newer ones anchored to the opening of the
+  prompt), never on text shape, so a human quoting one mid-message still fires;
+  a *user* reply with new work fires normally.
+- A **pure continuation or micro-edit under 25 words**, detected by IN-PROMPT
+  signal, anaphora, or an edit-verb referencing prior work without restating
+  the task: resume, continue, "check it," "make the Nth shorter," "still slide
+  X." Skips even if >1 sentence (keyed on observable words, not on session
+  state the skill cannot verify). **Carve-out: a human follow-up of 25 words
+  or more that carries answers, decisions or new instructions FIRES**, and its
+  block compiles them into the working spec; so does a continuation that
+  introduces new substantive work ("resume, and now also draft the
+  discussion").
 - **Block-would-exceed-answer.** If the optimized block would run longer than the
   answer itself, the ask is trivial; skip the block (and usually the skill). This
-  is the trivial-Chat guard: a one-line reply does not need a five-element frame.
+  is the trivial-Chat guard: a one-line reply does not need a full frame.
 
 **Tiebreaker** (applies only after no skip matches): when a prompt could plausibly
 be either substantive or trivial, treat it as substantive and FIRE. This is the
-user's explicit standing preference. A superfluous block costs a few lines; a
-missed block costs the whole optimization. Only the SACRED hard skips survive
-ambiguity: pure greeting, bare ack, bare yes/no, pure status check, single
-deterministic command, background-task event, and pure continuation. The soft
+user's explicit standing preference, and the skill runs on nearly all of the
+user's own prompts. A superfluous block costs a few lines; a missed block costs the
+whole optimization. Only the SACRED hard skips survive ambiguity: pure
+greeting, bare ack, bare yes/no, pure status check, single deterministic
+command, background-task or other non-human event, and pure continuation or
+micro-edit under 25 words. The soft
 categories (single-fact lookup, bare definition, block-would-exceed-answer)
 still exist but lose every tie.
 
@@ -278,6 +290,7 @@ past chats rather than the current prompt, downgrade it (3→2, 2→1), kept str
 even when the user appears to be continuing prior work; the user may be
 starting something new, and memory-based assumptions risk over-confident
 intake. Only information explicit in the current prompt earns full credit.
+Memory-derived items are also listed in `<assumptions>`.
 
 #### D. Determine Question Count
 
@@ -295,6 +308,11 @@ Apply the **channel × score** matrix:
 
 The prompt is already specified, so the question sharpens output direction
 rather than re-asking what the user already supplied.
+
+Two-stage intake for changes to a standing system or a strategy: do the
+research first, present options A / B / status quo with pros and cons and a
+recommendation, then ask. Never ask before the evidence is in, and never edit
+before the user picks.
 
 **Uncertainty override loop**: after the initial batch, recompute the score
 using the answers. If uncertainty remains >20% (score <13), ask a follow-up
@@ -441,7 +459,7 @@ under 200 ms") rather than "improve" or "do your best".
 into a step that already exists, and the judge is a short tail on an existing check
 (`— judge: pytest exit code`), not a new sentence. Target at most 6 `<instructions>` steps
 on a Document block and 4 on Chat, one or two sentences each, unless the ask itself names
-more parts; `<eval>` stays at 2–5 one-line checks. A block that came out longer than the
+more parts; `<eval>` stays at 1–3 one-line checks. A block that came out longer than the
 task needed fails Economy, so re-tighten it in the same pass.
 
 **Explicit cue.** When the user asks for a deeper version of a task or poses these four
@@ -523,10 +541,11 @@ no schema element; on a short run it adds nothing.
 **Content gate, not a trigger.** Every fired block carries `<eval>`; it never decides
 whether the skill fires. Full protocol: `references/eval-hillclimb.md`.
 
-- **`check` mode (every task).** 2–5 pass/fail checks derived from the success
+- **`check` mode (every task).** 1–3 pass/fail checks derived from the success
   criteria, each answerable from the artifact or a tool output: "script exits 0 on the
-  sample", "≤ 300 words", "every row cites a source". No 1–5 scales. Run them before the
-  closeout and state the tally ("4/4 checks passed", or which failed). When the
+  sample", "≤ 300 words", "every row cites a source". No 1–5 scales. Running them is
+  the last step of the work; the tally goes in the closeout's Proof line ("3/3 checks
+  passed", or which failed). A check that cannot be run is not written. When the
   Completion Contract fires, its countable done-condition is one of the checks.
   On a long or multi-artifact run, keep the checks as a ledger (requirement | pass /
   fail / unresolved | evidence | correction): evidence is a path, a source link, or
@@ -561,46 +580,6 @@ whether the skill fires. Full protocol: `references/eval-hillclimb.md`.
 3. If Document channel and post-answer uncertainty still >20%: ask
    follow-up batch in the next turn before executing the deliverable.
 
-### Goal Handoff (default-on suggestion)
-
-`/goal` is a built-in Claude Code command (≥ 2.1.139) setting a session-scoped
-completion condition: after every turn a small/fast model checks the transcript
-against it, and if unmet, Claude takes another turn. prompt-optimizer specifies
-*what to do*; `/goal` specifies *when to stop*.
-
-**Suggest only.** Setting a goal starts a loop, so prompt-optimizer only ever
-surfaces a pre-filled, copy-pasteable line in `<suggested_goal>` and lets the
-user opt in. Never run `/goal` on the user's behalf.
-
-**Gate (Document-only):** include `<suggested_goal>` on **Document / Artifact
-tasks only**, single-pass included. **Chat tasks never get it**, regardless of
-autonomy signal or multi-turn shape. The line renders once, in the element,
-and nowhere else.
-
-**Condition-writing rules, always pre-filled and countable:**
-- One measurable end state, filled in concretely, never the literal template token.
-- The evaluator is a **small/fast model that cannot call tools or read files**,
-  so phrase the condition to be transcript-provable: artifact written at a
-  stated path, N sections shown drafted, each under its word cap, every cited
-  item shown resolving.
-- When "done" is subjective (taste, tone, persuasiveness), substitute a
-  transcript-provable proxy rather than dropping the suggestion.
-- Always include a natural-language turn bound, "or stop after N turns"; there
-  is no `--max-turns` flag.
-- ≤ 4,000 chars total.
-- When the Completion Contract fired, the condition inherits its countable
-  N-of-N done-condition.
-
-**Format inside `<suggested_goal>`:**
-
-```
-/goal <condition phrased so the evaluator can read the answer from the
-transcript> — or stop after N turns
-```
-
-The pre-filled line lives in `<suggested_goal>` and nowhere else; if the gate
-doesn't fire (any Chat-channel task), omit the element rather than leaving it empty.
-
 ### Setup-Recommender Handoff (large projects only)
 
 Fires only on a CODE or repo-rooted ANALYSIS task in a large, ongoing codebase
@@ -626,8 +605,10 @@ above are authoritative on their own.
 
 ## Rules
 
-1. The `<optimized_prompt>` block appears at the top of the first substantive
-   response per task, structured as the closed template with its `<eval>` element (Output Rule).
+1. The `<optimized_prompt>` block appears at the top of the response to every human-typed
+   prompt that is not a hard skip, structured as the closed template with its `<assumptions>`
+   and `<eval>` elements (Output Rule). Follow-ups of 25 words or more fire; pure
+   continuations and micro-edits under 25 words do not.
 2. Question count is channel × score: Chat 0–2; Document 1–5 (1 only at
    score ≥ 13, content-extending).
 3. Uncertainty override loop: if >20% uncertainty remains after the initial
@@ -643,9 +624,7 @@ above are authoritative on their own.
    explicitly. The block STILL fires (unless skip-listed).
    (b) A user-named count ("ask me 5–10," "quiz me") → raises the question cap.
    (c) "Just"-class defaults → lowers the count to 0 (but still fires).
-7. Goal handoff (Document-only): include `<suggested_goal>` on Document /
-   Artifact tasks only (single-pass included). Chat tasks never get it,
-   regardless of autonomy signal. Suggest the `/goal` line; never auto-fire.
+7. (Retired 2026-11-14: goal handoff removed.)
 8. End-of-turn summary length: 1–2 sentences, always. Governs the prose after
    the deliverable, not the deliverable itself.
 9. Completion Contract is a CONTENT gate, never a trigger: it shapes what goes
@@ -664,8 +643,9 @@ above are authoritative on their own.
     `[writing-review: …]` directly above `[anti-AI: …]`, both under the block in the
     response that carries the drafted prose (not above a draft that does not exist yet).
     Neither affects firing.
-12. Eval Contract: every block carries `<eval>`. `check` mode (2–5 pass/fail checks,
-    at least one with a named outside judge, tally stated at closeout) on every task; `hillclimb` mode (train/test split, one
+12. Eval Contract: every block carries `<eval>`. `check` mode (1–3 pass/fail checks,
+    at least one with a named outside judge, run as the last step, tally in the closeout's
+    Proof line) on every task; `hillclimb` mode (train/test split, one
     change per round, keep only when both sets improve, stop after 2–3 flat rounds) by
     default on repeatable surfaces and Workflow runs. Content gate; never affects firing.
 13. Long-Run Harness: a run that may outlive one context or session gets preflight,

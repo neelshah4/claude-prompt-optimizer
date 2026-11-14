@@ -14,7 +14,7 @@ goes up on cases the optimizer never looked at.
 
 | Mode | When | What it costs |
 |------|------|---------------|
-| `check` | Every triggered task. One-off deliverables: an email, an analysis, a deck, a code change. | 2–5 pass/fail checks, run once against the finished artifact before closeout. |
+| `check` | Every triggered task. One-off deliverables: an email, an analysis, a deck, a code change. | 1–3 pass/fail checks, run once against the finished artifact as the last step of the work; the tally goes in the closeout's Proof line. A check that cannot be run is not written. |
 | `hillclimb` | The thing being built runs again: a skill, prompt, agent, tool description, hook, workflow script, pipeline, template, or extraction/classification step. Also any Workflow run, and any ask to optimize, iterate, improve, or make cheaper. | A case set, a grader, a baseline, then rounds until the score stalls. |
 
 A one-off with no case set cannot be hillclimbed: there is nothing to split and nothing

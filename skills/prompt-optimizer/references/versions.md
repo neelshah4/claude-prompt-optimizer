@@ -5,6 +5,40 @@ disclosure). Entries are historical records, reproduced verbatim: they describe 
 past pass did and are NOT current instructions. Do not edit a past entry to match
 current behavior.
 
+## Human turns only, follow-ups fire, assumptions replace the goal line (2026-11-14, v2026.11.14)
+
+PROMPT AUDIT (2026-11-14): from a 50-session transcript audit and the owner's picks (P1 A, P2/P3 A, P4 B, P5 status quo).
+     Evidence: 130 Stop blocks read "prompt-optimizer block missing", and only 32 of them followed a human prompt;
+     94 of the 130 were answered by a one-line skip statement; the nudge was injected 1,034 times, many on
+     non-human turns. An eval tally reached the closeout in 19 of 184 block turns. `/goal` was offered 27 times
+     and typed 0 times. The owner's instruction of 2026-11-14, "ensure prompt optimizer runs on nearly all MY own
+     prompts", reverses the earlier "first response per task only" gotcha for follow-ups of 25 words or more.
+     Changes: (P1) both hooks treat subagent hand-backs, task notifications, compaction summaries,
+     scheduled-task starts, `<side-sessions-event>` and `<ci-monitor-event>` as non-human; new markers are
+     matched on the first ~400 characters only, so a human quoting one mid-message still fires; the Stop hook
+     also allows when the entry that started the turn is non-human. The skill fires on every human-typed prompt
+     except the hard skips; the continuation skip narrows to pure continuations and micro-edits under 25 words;
+     a follow-up of 25 words or more fires and its block compiles the decisions into the working spec; the Stop
+     hook's miss set widens from ">40 words with a content verb" to any human prompt of 25 words or more that is
+     not a hard skip (all fail-open paths kept; a continuation skips only under 25 words); the nudge also
+     suppresses a bare "continue" or "resume". (P2/P3) schema gains `<assumptions>` after `<instructions>`;
+     `<suggested_goal>`, the Goal Handoff section and Rule 7 are removed (Rule 7 is kept as a retired stub so
+     rule numbers stay stable); `<instructions>` keeps only steps that add to the user's words; `<eval>` goes
+     from 2-5 to 1-3 checks, run as the last step, tally in the closeout's Proof line; memory-derived items are
+     listed in `<assumptions>` (the penalty arithmetic is unchanged); a delegated block plus exact paths is the
+     agent's brief; a turn under 25 words gets a block only for new substantive work. (P4) Phase 0.D and
+     `question-banks.md` gain the research, then options A / B / status quo, then ask order; Phase 0.C scoring
+     and the matrix are untouched. `examples.md` blocks now use the new schema. SKILL.md went from 699 to 679 lines.
+     Tested: `hooks/tests/prompt_optimizer_hook_fixtures.py` (51 checks, 0 failures, after a review caught the nudge using its bare-continuation pattern before defining it, which silenced every short prompt; the pattern now sits above its use and five short-task controls guard it: the four non-human payload
+     shapes plus the two event tags, quoted-marker controls, 24 vs 25 word boundary, fail-open paths);
+     `lint_agents.py --skill` 0 errors; `sh -n` on both hooks. Runner test: eight fresh Sonnet runners read the edited skill from disk, one prompt each (new document
+     task, 46-word follow-up with decisions, bare "continue", micro-edit, subagent hand-back, standing-system
+     change, chat methods question, status check); a script graded the output files 29 of 29 (fire or skip as
+     expected, `<assumptions>` present, no goal line, a judge named, 1-3 checks, options before any edit on the
+     standing-system case). Not tested: a live `<side-sessions-event>` or `<ci-monitor-event>` payload (none
+     found in 60 transcripts), block quality on Opus runners, and the pinned hashes in
+     `workflows/_tests/hook-test.sh`, which already failed 10 of 53 before this change and were not re-cut.
+
 ## Routing fixes 111-113 (2026-10-16b)
 
 ROUTING FIXES (2026-10-16b): resolves skill-observations 111, 112, 113 (open since the

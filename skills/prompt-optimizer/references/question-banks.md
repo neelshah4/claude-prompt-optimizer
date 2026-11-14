@@ -41,3 +41,5 @@ for each dimension, not the dimension names and scoring, which are the Phase
 | **RESEARCH-DESIGN** *(always Document)* | Stage: Concept / Aims / Protocol / Stats plan | Aims / Design critique / Power calc / Methods draft | *Funding:* R01 / R21 / K08–K23 / Foundation / not-grant / unsure | Scope: single aim / 3-aim cohesive / multi-project / exploratory | *Timeline:* <3mo / 3–6 / 6–12 / >12 |
 
 **GENERAL**: pick options from whichever bank matches the gap dimensions.
+
+For a change to a standing system or a strategy, research first, present options A / B / status quo with pros and cons and a recommendation, then ask; never ask before the evidence is in or edit before the user picks.

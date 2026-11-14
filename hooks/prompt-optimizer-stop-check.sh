@@ -3,8 +3,11 @@
 #
 # (1) PRECISION BACKSTOP, NOT A BLANKET ENFORCER. This hook blocks a finished turn ONLY when
 #     the initiating prompt is a high-confidence prompt-optimizer MISS — an attachment-led ask
-#     (an @-token), a pasted plan / persona to execute, or a long (>40w) content-verb prompt —
-#     AND no optimized_prompt block was produced. It CANNOT reproduce the skill's soft skips
+#     (an @-token), a pasted plan / persona to execute, or (since 2026-11-14) any human-typed
+#     prompt of 25 words or more that is not a hard skip — AND no optimized_prompt block was
+#     produced. A turn started by a non-human entry (task notification, subagent hand-back,
+#     compaction summary, scheduled-task start, side-sessions or ci-monitor event) is never
+#     blocked. It CANNOT reproduce the skill's soft skips
 #     (single-fact lookup, definition, block-would-exceed-answer) or its deferred-block turns
 #     (clarifying questions, dispatch, plan mode), so it does NOT try: it FAILS OPEN (exit 0,
 #     no block) on every ambiguity, missing field, unreadable transcript, or parse error. Net
@@ -73,6 +76,24 @@ if os.environ.get("CLAUDE_PO_STOP_DISABLE") == "1":
 # --- Step 6: transcript must exist and be readable. -----------------------------------------
 if not transcript_path or not os.path.isfile(transcript_path):
     allow()
+
+# --- Non-human turn starters (2026-11-14). Harness-emitted, never typed by the user. Transcript
+# origin.kind / isCompactSummary are checked first; the text markers are anchored to the OPENING
+# of the prompt (first ~400 chars), so a human quoting one mid-message is still a human turn.
+# Real openings seen in transcripts: "Another Claude session sent a message:\n<agent-message
+# from=...>\n[Subagent hand-back] ...", "This session is being continued from a previous
+# conversation ...", "<scheduled-task name=... file=...>", "<task-notification>\n<task-id>...".
+NONHUMAN_OPEN = ("Another Claude session sent a message", "<agent-message from=",
+                 "This session is being continued from a previous conversation",
+                 "<scheduled-task", "<side-sessions-event", "<ci-monitor-event",
+                 "<task-notification")
+
+def nonhuman_start(e, t):
+    org = e.get("origin")
+    kind = org.get("kind") if isinstance(org, dict) else org
+    if kind in ("peer", "task-notification") or e.get("isCompactSummary"):
+        return True
+    return t.lstrip()[:400].startswith(NONHUMAN_OPEN)
 
 # --- Regexes (VERB/GREETING/ACK/YESNO/STATUS/CMD reused verbatim from the nudge hook). ------
 VERB_RE   = r"write|draft|analyz|build|creat|review|summar|design|plan|compar|explain|evaluat|optim|generat|revis|edit|critique|assess|model|calculat|implement|refactor|debug|research|outline|rewrite"
@@ -149,15 +170,22 @@ try:
     # Skill-injected bodies; the isMeta guard is.
     user_idx = -1
     prompt_text = ""
+    turn_started_nonhuman = False
     for i, e in enumerate(entries):
         if not isinstance(e, dict) or e.get("type") != "user":
-            continue
-        if e.get("isMeta") or e.get("sourceToolUseID"):
             continue
         msg = e.get("message") or {}
         txt = extract_text(msg.get("content"))
         t = txt.strip()
         if not t:
+            continue
+        # A non-human entry that starts a turn (peer hand-backs are isMeta, so test this
+        # before the isMeta skip). The latest such entry decides: if no human prompt follows
+        # it, the current turn was not started by the user and the hook allows.
+        if nonhuman_start(e, txt):
+            turn_started_nonhuman = True
+            continue
+        if e.get("isMeta") or e.get("sourceToolUseID"):
             continue
         if t.startswith("[prompt-optimizer]") or t.startswith("<system-reminder>"):
             continue
@@ -171,10 +199,12 @@ try:
         if ("[SYSTEM NOTIFICATION - NOT USER INPUT]" in t
                 or "<task-notification>" in t
                 or t.startswith("<local-command-stdout>")):
+            turn_started_nonhuman = True
             continue
         user_idx = i
         prompt_text = txt
-    if user_idx == -1:
+        turn_started_nonhuman = False
+    if user_idx == -1 or turn_started_nonhuman:
         allow()
 
     # 7b. All assistant text this turn + the terminal tool_use name.
@@ -197,11 +227,14 @@ try:
     words = len(low.split())
 
     # --- High-confidence miss signal ---
+    # 2026-11-14: widened from ">40 words with a content verb" to any human-typed prompt of
+    # 25 words or more (the skill fires on follow-ups of 25+ words that carry decisions);
+    # hard skips and every fail-open path below are unchanged.
     has_at   = bool(re.search(r"(^|\s)@\S", prompt_text))
     heading  = bool(re.match(r"#{1,3}\s", low.lstrip()))
     persona  = bool(re.search(PERSONA_PLAN_RE, low))
-    long_verb = (words > 40) and bool(re.search(VERB_RE, low))
-    high_conf = has_at or heading or persona or long_verb
+    long_human = words >= 25
+    high_conf = has_at or heading or persona or long_human
 
     # --- Exclusions (any one True -> do NOT block) ---
     ends_q = stripped.endswith("?")
@@ -216,7 +249,9 @@ try:
         (bool(re.search(CMD_RE, low)) and words <= 10)
     )
 
-    continuation = bool(re.search(CONT_RE, low))
+    # A continuation or micro-edit skips only under 25 words; a longer follow-up that opens
+    # with "also" or "now make" carries new instructions and fires.
+    continuation = bool(re.search(CONT_RE, low)) and words < 25
 
     block_present = ("optimized_prompt" in assistant_text) or ("optimized_prompt" in last_assistant_msg)
     lam_ends_q = last_assistant_msg.strip().endswith("?")
@@ -233,8 +268,8 @@ try:
     )
 
     if should_block:
-        reason = ("This turn's prompt looks like a task (attachment-led or a pasted plan) but no "
-                  "optimized_prompt block was produced. Prepend the 5-element optimized_prompt "
+        reason = ("This turn's human-typed prompt looks like a task (attachment-led, a pasted plan, or 25 words or more) but no "
+                  "optimized_prompt block was produced. Prepend the optimized_prompt "
                   "block per the prompt-optimizer skill at the top of your continued response — "
                   "or, if a skip category genuinely applies, state which one in one line and finish.")
         # Compact separators to match target-artifacts.md §B verbatim ({"decision":"block",...}).
