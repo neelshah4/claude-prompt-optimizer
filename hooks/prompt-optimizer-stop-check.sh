@@ -139,71 +139,92 @@ def extract_text(content):
 
 # --- Step 7: everything below is one big try/except -> fail open on ANY error. ---------------
 try:
-    with open(transcript_path, "rb") as fh:
-        blob = fh.read()
-    # Bounded tail read for speed; drop a partial first line if truncated.
-    if len(blob) > 4_000_000:
-        blob = blob[-4_000_000:]
-        nl = blob.find(b"\n")
-        if nl != -1:
-            blob = blob[nl + 1:]
-    text = blob.decode("utf-8", "replace")
+    # 2026-11-16 (B3): the old read kept only the LAST 4,000,000 bytes, so on a long session whose
+    # opening prompt lay before that window the hook saw no prompt and allowed the stop unchecked
+    # (84 of 225 recent transcripts exceed 4 MB). The window now widens (4 MB -> 16 MB -> 64 MB)
+    # until a user entry that decides the turn is inside it; past 64 MB, or on any error, the hook
+    # fails open as before. A transcript of 4 MB or less is read whole, exactly as before.
+    TAIL0 = 4_000_000
+    TAIL_MAX = 64_000_000
 
-    entries = []
-    for line in text.splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        entries.append(json.loads(line))  # garbage line -> raises -> fail open
+    def parse_entries(blob, partial):
+        # A window that starts mid-file begins inside a line: drop that partial first line.
+        if partial:
+            nl = blob.find(b"\n")
+            blob = blob[nl + 1:] if nl != -1 else b""
+        out = []
+        for line in blob.decode("utf-8", "replace").splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            out.append(json.loads(line))  # garbage line -> raises -> fail open
+        return out
 
-    # 7a. Last real user prompt (skip tool_result-only + injected [prompt-optimizer]/system-reminder).
-    # PRIMARY filter is the isMeta/sourceToolUseID guard immediately below: the Skill tool injects
-    # the loaded SKILL.md body as a type:"user" transcript entry (isMeta:true, sourceToolUseID set
-    # to the invoking tool_use id, text starting "Base directory for this skill: ..."), and other
-    # harness-synthesized entries (queued auto-continuations, local-command caveats, image-size
-    # annotations, Stop-hook feedback) carry isMeta:true the same way. None of these are a human
-    # prompt. Empirically verified 2026-08-22 against 10 recent transcripts (1339 type:"user"
-    # entries; 46 carried isMeta or sourceToolUseID, 22 of them literal Skill-body injections; zero
-    # genuine human-typed prompts carried either field). The two string-prefix checks below are a
-    # narrower, secondary defense for the nudge hook's own additionalContext marker text, which in
-    # practice never appears as a user-entry (see N7) — they are not the mechanism that filters
-    # Skill-injected bodies; the isMeta guard is.
-    user_idx = -1
-    prompt_text = ""
-    turn_started_nonhuman = False
-    for i, e in enumerate(entries):
-        if not isinstance(e, dict) or e.get("type") != "user":
-            continue
-        msg = e.get("message") or {}
-        txt = extract_text(msg.get("content"))
-        t = txt.strip()
-        if not t:
-            continue
-        # A non-human entry that starts a turn (peer hand-backs are isMeta, so test this
-        # before the isMeta skip). The latest such entry decides: if no human prompt follows
-        # it, the current turn was not started by the user and the hook allows.
-        if nonhuman_start(e, txt):
-            turn_started_nonhuman = True
-            continue
-        if e.get("isMeta") or e.get("sourceToolUseID"):
-            continue
-        if t.startswith("[prompt-optimizer]") or t.startswith("<system-reminder>"):
-            continue
-        # Background-task events are delivered as type:"user" entries but carry no human
-        # instruction — they are a completed Bash job, a Monitor line, or a finished agent
-        # reporting back. Treating one as "the initiating prompt" makes a long tool-result
-        # payload look like a long content-verb task, and the hook then demands an
-        # optimized_prompt block for a turn the user never spoke in. Observed live twice on
-        # 2026-08-01. The markers are emitted by the harness, not by any model, so they are a
-        # reliable provenance signal rather than a text-shape guess.
-        if ("[SYSTEM NOTIFICATION - NOT USER INPUT]" in t
-                or "<task-notification>" in t
-                or t.startswith("<local-command-stdout>")):
-            turn_started_nonhuman = True
-            continue
-        user_idx = i
-        prompt_text = txt
+    def find_prompt(entries):
+        # 7a. Last real user prompt (skip tool_result-only + injected [prompt-optimizer]/system-reminder).
+        # PRIMARY filter is the isMeta/sourceToolUseID guard immediately below: the Skill tool injects
+        # the loaded SKILL.md body as a type:"user" transcript entry (isMeta:true, sourceToolUseID set
+        # to the invoking tool_use id, text starting "Base directory for this skill: ..."), and other
+        # harness-synthesized entries (queued auto-continuations, local-command caveats, image-size
+        # annotations, Stop-hook feedback) carry isMeta:true the same way. None of these are a human
+        # prompt. Empirically verified 2026-08-22 against 10 recent transcripts (1339 type:"user"
+        # entries; 46 carried isMeta or sourceToolUseID, 22 of them literal Skill-body injections; zero
+        # genuine human-typed prompts carried either field). The two string-prefix checks below are a
+        # narrower, secondary defense for the nudge hook's own additionalContext marker text, which in
+        # practice never appears as a user-entry (see N7) — they are not the mechanism that filters
+        # Skill-injected bodies; the isMeta guard is.
+        user_idx = -1
+        prompt_text = ""
         turn_started_nonhuman = False
+        for i, e in enumerate(entries):
+            if not isinstance(e, dict) or e.get("type") != "user":
+                continue
+            msg = e.get("message") or {}
+            txt = extract_text(msg.get("content"))
+            t = txt.strip()
+            if not t:
+                continue
+            # A non-human entry that starts a turn (peer hand-backs are isMeta, so test this
+            # before the isMeta skip). The latest such entry decides: if no human prompt follows
+            # it, the current turn was not started by the user and the hook allows.
+            if nonhuman_start(e, txt):
+                turn_started_nonhuman = True
+                continue
+            if e.get("isMeta") or e.get("sourceToolUseID"):
+                continue
+            if t.startswith("[prompt-optimizer]") or t.startswith("<system-reminder>"):
+                continue
+            # Background-task events are delivered as type:"user" entries but carry no human
+            # instruction — they are a completed Bash job, a Monitor line, or a finished agent
+            # reporting back. Treating one as "the initiating prompt" makes a long tool-result
+            # payload look like a long content-verb task, and the hook then demands an
+            # optimized_prompt block for a turn the user never spoke in. Observed live twice on
+            # 2026-08-01. The markers are emitted by the harness, not by any model, so they are a
+            # reliable provenance signal rather than a text-shape guess.
+            if ("[SYSTEM NOTIFICATION - NOT USER INPUT]" in t
+                    or "<task-notification>" in t
+                    or t.startswith("<local-command-stdout>")):
+                turn_started_nonhuman = True
+                continue
+            user_idx = i
+            prompt_text = txt
+            turn_started_nonhuman = False
+
+        return user_idx, prompt_text, turn_started_nonhuman, entries
+
+    size = os.path.getsize(transcript_path)
+    win = TAIL0
+    with open(transcript_path, "rb") as fh:
+        while True:
+            start = max(0, size - win)
+            fh.seek(start)
+            entries = parse_entries(fh.read(size - start), start > 0)
+            user_idx, prompt_text, turn_started_nonhuman, entries = find_prompt(entries)
+            if start == 0 or user_idx != -1 or turn_started_nonhuman:
+                break
+            if win >= TAIL_MAX:
+                allow()
+            win = min(win * 4, TAIL_MAX)
     if user_idx == -1 or turn_started_nonhuman:
         allow()
 

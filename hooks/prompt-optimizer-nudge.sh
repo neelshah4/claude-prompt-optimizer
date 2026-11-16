@@ -23,7 +23,18 @@
 # than false positives, so parse failures and empty prompts fall open to INJECT.
 
 input=$(cat)
-prompt=$(printf '%s' "$input" | python3 -c 'import sys,json; print(json.load(sys.stdin).get("prompt",""))' 2>/dev/null)
+
+# --- Shared harness-event pre-filter (2026-11-16, B2): exits silently when the prompt OPENS with a
+# harness marker (task notification, subagent hand-back, compaction summary, scheduled-task start,
+# side-session or CI event, local-command output). Anchored to the opening, so a human quoting a
+# marker mid-message is unaffected. Fails toward normal behavior: any filter error falls back to
+# the old inline extraction. The steps (a0)/(a0b) below stay as a second, older net.
+
+prompt=$(printf '%s' "$input" | python3 -S "$(dirname "$0")/harness_event.py" extract 2>/dev/null); rc=$?
+[ "$rc" -eq 10 ] && exit 0
+if [ "$rc" -ne 0 ]; then
+  prompt=$(printf '%s' "$input" | python3 -c 'import sys,json; print(json.load(sys.stdin).get("prompt",""))' 2>/dev/null)
+fi
 
 emit() {
   cat <<'JSON'
@@ -66,9 +77,41 @@ esac
 
 lower=$(printf '%s' "$prompt" | tr 'A-Z' 'a-z')
 
+# --- Step (a-pre): status and single-command skip tests run BEFORE the verb match (2026-11-16, B2).
+# The verb regex below is a bare substring test, so "rename draft_v2.docx to credit.docx" (a filename
+# holding "draft") and "is the model running" ("model") injected although both are on the skill's
+# Skip list. Both tests run on a newline-flattened copy so ^...$ anchor to the WHOLE prompt rather
+# than to one line of a multi-line prompt. They apply only to prompts that step (a) would not
+# force-inject on length or sentence count (15 words or fewer, one sentence).
+#   STATUS: tightly anchored whole-prompt status checks carry no content to produce, so a verb stem
+#           inside one ("model") is not a task.
+#   CMD:    a single file or tool command of 10 words or fewer. Path-like tokens (anything holding
+#           . / _ ~ or a digit) are removed before the verb test, so a stem inside a filename does
+#           not count; a stem anywhere else ("run the regression and summarize") is a bundled task
+#           and still injects, per the skill's "fire on that clause only" rule.
+STATUS_RE='^(what[[:punct:]]?s (running|left|next|the status)|did (it|that|.{0,25}) (work|finish|pass|run)|is .{0,30} (installed|running|done|ready|up)|are we|check (it|the status|my changes))\??$'
+CMD_RE='^(rename|move|mv|delete|rm|open|run|install|cd|ls|cat|git|npm|node|python)\b'
+VERB_RE='write|draft|analyz|build|creat|review|summar|design|plan|compar|explain|evaluat|optim|generat|revis|edit|critique|assess|model|calculat|implement|refactor|debug|research|outline|rewrite'
+
+# Newline-flattened copy; "set --" re-splits it on whitespace, which trims and counts it with no
+# extra process (globbing off so a "*" in a prompt is never expanded).
+flat=$(printf '%s' "$lower" | tr '\n\r' '  ')
+set -f; set -- $flat; flat_words=$#; flat="$*"; set +f
+if [ "$flat_words" -le 15 ] && ! printf '%s' "$flat" | grep -Eq '[.?][[:space:]]+[^[:space:]]'; then
+  if printf '%s' "$flat" | grep -Eq "$STATUS_RE"; then
+    exit 0
+  fi
+  if [ "$flat_words" -le 10 ] && printf '%s' "$flat" | grep -Eq "$CMD_RE"; then
+    residual=$(printf '%s' "$flat" | tr ' ' '\n' | grep -Ev '[./_~0-9]' | tr '\n' ' ')
+    if ! printf '%s' "$residual" | grep -Eq "$VERB_RE"; then
+      exit 0
+    fi
+  fi
+fi
+
 # --- Step (a): FORCE-INJECT first — content-production verb stem, long prompt, or multi-sentence.
 # This dominates every skip test below; it is what makes suppressing a real task nearly impossible.
-VERB_RE='write|draft|analyz|build|creat|review|summar|design|plan|compar|explain|evaluat|optim|generat|revis|edit|critique|assess|model|calculat|implement|refactor|debug|research|outline|rewrite'
+# VERB_RE is defined once, above, in step (a-pre).
 if printf '%s' "$lower" | grep -Eq "$VERB_RE"; then
   emit
   exit 0
@@ -105,8 +148,7 @@ fi
 
 # --- Step (c): TIER-B skip — anchored status/verification check, or a single short
 # deterministic command (only when step (a) did not already fire).
-STATUS_RE='^(what[[:punct:]]?s (running|left|next|the status)|did (it|that|.{0,25}) (work|finish|pass|run)|is .{0,30} (installed|running|done|ready|up)|are we|check (it|the status|my changes))\??$'
-CMD_RE='^(rename|move|mv|delete|rm|open|run|install|cd|ls|cat|git|npm|node|python)\b'
+# STATUS_RE and CMD_RE are defined once, above, in step (a-pre).
 
 if printf '%s' "$lower" | grep -Eq "$STATUS_RE"; then
   exit 0

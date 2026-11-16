@@ -5,6 +5,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning is calendar-based (`YYYY.M.D`), matching the skill's own dated version
 string rather than imposing a semantic version it does not have.
 
+## [2026.11.16] - 2026-11-16
+
+### Changed
+- Rule 8 (end-of-turn closeout) follows the closeout format in the user's standing instructions when one exists, and otherwise closes in one or two sentences. It no longer says "always".
+- Rule 11 names one merged receipt line, `[writing: review <academic|casual|skipped> · anti-AI <verdict> · T<n>]`, in place of two separate lines.
+- The nudge hook stays silent when the prompt opens with a harness marker (task notification, subagent hand-back, compaction summary, scheduled-task start, side-session or CI event, local-command output). The check lives in the new `hooks/harness_event.py`, matches only the opening of the prompt, and falls back to the old prompt extraction if the module is missing or raises.
+- For a prompt of 15 words or fewer in one sentence, the nudge hook runs its status and single-command skip tests before the content-verb match. A verb stem inside a filename or a status question no longer injects.
+- The Stop hook finds the opening prompt in transcripts larger than 4 MB by widening its read window from 4 MB to 16 MB to 64 MB, then allows the stop past 64 MB. Its block conditions are unchanged.
+- Handoff rows, examples and history refer to a grant-review skill generically ("if installed") instead of naming one.
+
+### Added
+- `hooks/harness_event.py`, the shared harness-event check.
+- `hooks/tests/` with three fixture scripts: `prompt_optimizer_hook_fixtures.py`, `prefilter_failopen.py` and `stop_hook_tail_fixtures.py`.
+
 ## [2026.11.14] - 2026-11-14
 
 ### Changed
@@ -80,7 +94,7 @@ No trigger, Skip, schema, or hook-semantics change; both hooks remain byte-ident
 - A "Supersedes any bundled/upstream variant" sentence to the frontmatter description.
 
 ### Fixed
-- Two stale `grant-review` references corrected to `grant-reviewer` (the skill's actual name) in SKILL.md.
+- Two stale grant-review skill references corrected in SKILL.md.
 - Two archived-path comments in `hooks/prompt-optimizer-stop-check.sh`, missed by a prior scrub, genericized to remove an internal filesystem path.
 
 No trigger, Skip, schema, or hook-semantics change; both hooks remain otherwise byte-identical to v2026.9.8.

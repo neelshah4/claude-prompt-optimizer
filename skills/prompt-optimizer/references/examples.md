@@ -7,11 +7,11 @@ selector all remain in `SKILL.md` and are authoritative there.
 
 ## Examples
 
-### Example 1: Grant Aims (defer to grant-reviewer, Document, 5 Q via handoff)
+### Example 1: Grant Aims (defer to a grant-review skill, Document, 5 Q via handoff)
 
 **User**: "Help me draft specific aims for my R01 on ML-based ventilator weaning in pediatric ARDS"
 
-**Action**: Task = RESEARCH-DESIGN, mechanism = R01 → grant-reviewer's intake
+**Action**: Task = RESEARCH-DESIGN, mechanism = R01 → the grant-review skill's intake
 runs first (agency, mechanism, payoff aim, scope, timeline; 5 questions).
 prompt-optimizer then synthesizes:
 
@@ -30,11 +30,11 @@ prompt-optimizer then synthesizes:
        outcome, feasibility signal.
     4. Close with an impact statement framed in the reviewer's language.
   </instructions>
-  <assumptions>Mechanism R01 and a three-aim structure, from the grant-reviewer
+  <assumptions>Mechanism R01 and a three-aim structure, from the grant-review skill's
   intake; no preliminary-data claims beyond what the user supplies.</assumptions>
   <eval>check. 1) Three aims, each with hypothesis, approach, outcome and
   feasibility signal. 2) No aim depends on another succeeding. — judge:
-  grant-reviewer panel read of the aims page.</eval>
+  grant-review panel read of the aims page.</eval>
   <critical>Each aim must be independently fundable. Reviewer-script lens
   throughout. No aim depends on another succeeding.</critical>
 </optimized_prompt>

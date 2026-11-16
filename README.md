@@ -205,11 +205,23 @@ You never see the intermediate passes. Only the final block.
 
 ## The hooks
 
-Two hooks ship in `hooks/`, wired automatically through `hooks/hooks.json`:
+Two hooks ship in `hooks/`, wired automatically through `hooks/hooks.json`, with one shared module they import:
 
 **`prompt-optimizer-nudge.sh`** — `UserPromptSubmit`. Pre-filters high-confidence trivial prompts and injects the directive on everything else. The pre-filter is deliberately a strict subset of the skill's skip list: it implements only greetings, bare acknowledgments, bare yes/no, tightly anchored status checks, and single deterministic commands. Soft skips stay with the model, because a regex that guesses wrong on those fails silently.
 
-**`prompt-optimizer-stop-check.sh`** — `Stop`. A precision backstop that blocks a finished turn only on high-confidence misses: an attachment-led ask, a pasted plan, or a long content-verb prompt with no block produced. It cannot reproduce the soft skips and does not try.
+Two behaviors matter for non-human events and short prompts. First, the hook stays silent when the prompt opens with a marker the harness writes onto the user channel (a task notification, a subagent hand-back, a compaction summary, a scheduled-task start, a side-session or CI event, local-command output). Markers are matched only against the opening of the prompt, so a person who quotes one mid-message still gets the normal behavior. The matching lives in `hooks/harness_event.py`; if that file is missing or raises, the hook falls back to its own prompt extraction and behaves as before. Second, for a prompt of 15 words or fewer in one sentence, the status and single-command tests run before the content-verb match, so a filename that contains a verb stem ("rename draft_v2.docx to final.docx") or a status question that contains one ("is the model running") no longer injects. A stem anywhere outside a path-like token still injects.
+
+**`prompt-optimizer-stop-check.sh`** — `Stop`. A precision backstop that blocks a finished turn only on high-confidence misses: an attachment-led ask, a pasted plan, or a long content-verb prompt with no block produced. It cannot reproduce the soft skips and does not try. On a long session the opening prompt may lie before the last 4 MB of the transcript, so the hook widens its read window (4 MB, then 16 MB, then 64 MB) until it finds the prompt that started the turn; past 64 MB, or on any error, it allows the stop. A transcript of 4 MB or less is read whole.
+
+**Closeout and receipt.** The skill's closeout rule defers to the standing instructions of the person using it: when they define a closeout format, the turn ends in that format; otherwise it ends in one or two sentences. When a setup runs a register reviewer and a writing pass after the drafted prose, the skill expects one receipt line under the block rather than two.
+
+**Tests.** `hooks/tests/` holds fixtures for both hooks. Run them from the repository root:
+
+```
+python3 hooks/tests/prompt_optimizer_hook_fixtures.py
+python3 hooks/tests/prefilter_failopen.py
+python3 hooks/tests/stop_hook_tail_fixtures.py
+```
 
 **The three-way contract.** The skill's skip list, the nudge hook's pre-filter, and the Stop hook's block conditions must move together. Change one without the others and the guarantee breaks. If you fork this, honor that or delete the hooks.
 
@@ -253,7 +265,7 @@ These are the instruction-writing moves the skill applies when it drafts a block
 
 **It fires on everything and I hate it.** Tighten the skip list, or remove the nudge hook and let the model decide. The default is deliberately aggressive.
 
-**It never fires.** Check the hooks installed. `/plugin list` should show the plugin; the nudge hook needs to be reachable at `${CLAUDE_PLUGIN_ROOT}/hooks/`.
+**It never fires.** Check the hooks installed. `/plugin list` should show the plugin; the nudge hook and `harness_event.py` need to be reachable at `${CLAUDE_PLUGIN_ROOT}/hooks/`.
 
 **The block is longer than the answer.** That is the trivial-Chat guard failing. It should have skipped. Worth an issue with the prompt that caused it.
 

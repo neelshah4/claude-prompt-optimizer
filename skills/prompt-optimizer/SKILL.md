@@ -15,7 +15,7 @@ description: >-
   shorter), while a follow-up of 25 words or more with answers, decisions or
   new instructions fires; or a block longer than the answer. Emits a prompt
   block with a built-in eval. Supersedes any bundled/upstream variant.
-lastReviewed: 2026-11-14
+lastReviewed: 2026-11-16
 ---
 # Prompt Optimizer
 
@@ -202,7 +202,7 @@ User prompt arrives
 | PRESENTATION | Slide decks, posters, visual deliverables |
 | COMMUNICATION | Outreach, networking, committee messages |
 | DOCUMENT | Spreadsheets, templates, checklists |
-| RESEARCH-DESIGN | Study design, protocols, grant aims; *defer to grant-reviewer for R01/K* |
+| RESEARCH-DESIGN | Study design, protocols, grant aims; *defer to a grant-review skill, if installed, for R01/K* |
 | GENERAL | Recommendations, comparisons, explanations, multi-step reasoning |
 
 WRITING, COMMUNICATION, DOCUMENT, and PRESENTATION tasks carry the mannered-prose and craft lines in
@@ -215,7 +215,7 @@ double-intake. Route by this selector:
 
 | Signal | Hand off to (before intake) |
 |--------|------------------------------|
-| Grant / specific aims / RFA / payoff aim | grant-reviewer |
+| Grant / specific aims / RFA / payoff aim | a grant-review skill, if installed |
 | Manuscript / abstract / reviewer response | manuscript-reviewer |
 | Manuscript-class stats on a **new dataset** | biostat-kickoff (then stats-plan-reviewer) |
 | Live patient scenario / physiology / drug-vent-hemodynamics | icu-clinical-consult |
@@ -227,7 +227,7 @@ double-intake. Route by this selector:
 | Broad grounded multi-source synthesis from scratch, such as "comprehensive/grounded report, survey, landscape, state-of-the-field on topic X," explore-an-unfamiliar-topic, cited long-form built from web sources | `deep-research` **if installed**, else run the sweep inline (see below) |
 
 When "review" is ambiguous (grant vs manuscript), pick by the artifact named:
-aims page → grant-reviewer; abstract/results/figures → manuscript-reviewer.
+aims page → the grant-review skill; abstract/results/figures → manuscript-reviewer.
 
 **STORM-shaped task → `deep-research` (route-when / don't-route).** `deep-research`,
 the local analog of Stanford's STORM (fan-out search → fetch → verify → cited
@@ -625,8 +625,10 @@ above are authoritative on their own.
    (b) A user-named count ("ask me 5–10," "quiz me") → raises the question cap.
    (c) "Just"-class defaults → lowers the count to 0 (but still fires).
 7. (Retired 2026-11-14: goal handoff removed.)
-8. End-of-turn summary length: 1–2 sentences, always. Governs the prose after
-   the deliverable, not the deliverable itself.
+8. End-of-turn closeout: when the user's standing instructions define a closeout
+   format (for example three labelled lines, Result, Proof and Open, on a turn that
+   changed a file or reports something done), use that format; otherwise close in
+   1–2 sentences. Governs the prose after the deliverable, not the deliverable itself.
 9. Completion Contract is a CONTENT gate, never a trigger: it shapes what goes
    inside an already-fired block and can never change whether the skill fires.
    When it fires, the final `<instructions>` step is the countable
@@ -639,8 +641,8 @@ above are authoritative on their own.
     gloss every term of art for the named reader; prefer the short everyday
     word." Neither affects firing.
 11. Reviewer ordering on WRITING, COMMUNICATION, and DOCUMENT tasks: register
-    reviewer (academic or casual) → writing-anti-ai → receipts, with
-    `[writing-review: …]` directly above `[anti-AI: …]`, both under the block in the
+    reviewer (academic or casual) → writing-anti-ai → one receipt line,
+    `[writing: review <academic|casual|skipped> · anti-AI <verdict> · T<n>]`, under the block in the
     response that carries the drafted prose (not above a draft that does not exist yet).
     Neither affects firing.
 12. Eval Contract: every block carries `<eval>`. `check` mode (1–3 pass/fail checks,
