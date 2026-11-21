@@ -94,8 +94,12 @@ check("fixture is larger than 4 MB", os.path.getsize(big) > 4_000_000, str(os.pa
 rc, blocked, why, _ = stop(PO, big)
 check("5 MB transcript, prompt before the window -> still blocks", rc == 0 and blocked, "rc=%s blocked=%s" % (rc, blocked))
 
-big_ok = write_t([U(LONG_PROMPT), A("start"),
-                  A("<optimized_prompt>x</optimized_prompt> then the answer.")], "po_big_ok",
+# Updated 2026-11-20 after an independent grader pass: a schema-less block
+# encoded the substring loophole; the case still pins the 5 MB tail window.
+VALID_PO = ("<optimized_prompt><role>Analyst choosing the first sensitivity analysis.</role><inputs>none</inputs>"
+            "<instructions>1. Rank the three analyses.</instructions><assumptions>none</assumptions>"
+            "<eval>check: one analysis is named first - judge: reading the reply</eval></optimized_prompt>")
+big_ok = write_t([U(LONG_PROMPT), A("start"), A(VALID_PO + " then the answer.")], "po_big_ok",
                  filler_bytes=5_000_000, filler_after_idx=1)
 rc, blocked, why, _ = stop(PO, big_ok)
 check("5 MB transcript with a block present (in-window) -> allows", rc == 0 and not blocked)

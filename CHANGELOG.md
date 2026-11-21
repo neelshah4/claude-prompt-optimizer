@@ -5,6 +5,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning is calendar-based (`YYYY.M.D`), matching the skill's own dated version
 string rather than imposing a semantic version it does not have.
 
+## [2026.11.20] - 2026-11-20
+
+### Changed
+- The Stop hook counts an `<optimized_prompt>` block as present only when a closed `<optimized_prompt>...</optimized_prompt>` element contains `<role>`, `<inputs>` and `<instructions>` as open and close pairs. A bare mention of the tag name no longer satisfies it. The fire and skip conditions are unchanged; the block message names the closed schema.
+- Fixtures: the valid-block case carries the full schema, and new cases cover a role-only block (blocks), a `<name>` placeholder inside `<inputs>` (allows) and a prose mention of the tag before a valid block (allows).
+
 ## [2026.11.16] - 2026-11-16
 
 ### Changed

@@ -15,7 +15,7 @@ description: >-
   shorter), while a follow-up of 25 words or more with answers, decisions or
   new instructions fires; or a block longer than the answer. Emits a prompt
   block with a built-in eval. Supersedes any bundled/upstream variant.
-lastReviewed: 2026-11-16
+lastReviewed: 2026-11-20
 ---
 # Prompt Optimizer
 

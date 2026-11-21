@@ -303,7 +303,7 @@ If you want real scored optimization, use DSPy or GEPA directly. This is a human
 
 ## Version
 
-`2026.11.16`, matching the skill's `lastReviewed: 2026-11-16`. This project uses calendar versioning because the skill itself is date-versioned. See [CHANGELOG.md](CHANGELOG.md).
+`2026.11.20`, matching the skill's `lastReviewed: 2026-11-20`. This project uses calendar versioning because the skill itself is date-versioned. See [CHANGELOG.md](CHANGELOG.md).
 
 ## Contributing
 

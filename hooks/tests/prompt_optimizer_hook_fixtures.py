@@ -120,7 +120,13 @@ def stop(entries, last="", extra=None, env=None):
     return o.returncode, blocked, o.stdout
 
 NOBLOCK = "Done. The three hooks now agree and the tests pass."
-WITHBLOCK = "<optimized_prompt>\n<role>x</role>\n</optimized_prompt>\nDone."
+# Updated 2026-11-20 after an independent grader pass:
+# the old block carried only <role>, which encoded the substring loophole the hook now closes.
+WITHBLOCK = ("<optimized_prompt>\n<role>Hook editor applying the decisions in the follow-up.</role>\n"
+             "<inputs>none</inputs>\n<instructions>1. Apply option A to the hooks and run the tests.</instructions>\n"
+             "<assumptions>none</assumptions>\n<eval>check: the hook tests exit 0 - judge: test runner exit code</eval>\n"
+             "</optimized_prompt>\nDone.")
+DEGENERATE = "<optimized_prompt>\n<role>x</role>\n</optimized_prompt>\nDone."
 words = len(FOLLOW.split())
 check("fixture follow-up is >= 25 words (%d)" % words, words >= 25)
 
@@ -151,7 +157,12 @@ case_allow("allows a turn started by a ci-monitor-event",
 
 # human turns
 case_block("blocks a 30-word human follow-up with decisions and no block", [U(FOLLOW), A(NOBLOCK)])
-case_allow("allows the same follow-up when the block is present", [U(FOLLOW), A(WITHBLOCK)], last=WITHBLOCK)
+case_allow("allows the same follow-up when a closed-schema block is present", [U(FOLLOW), A(WITHBLOCK)], last=WITHBLOCK)
+case_block("blocks the same follow-up when the block carries only <role>", [U(FOLLOW), A(DEGENERATE)], last=DEGENERATE)
+PH = WITHBLOCK.replace("<inputs>none</inputs>", "<inputs>SKILL: skills/<name>/SKILL.md</inputs>")
+case_allow("allows a closed-schema block whose <inputs> holds a <name> placeholder", [U(FOLLOW), A(PH)], last=PH)
+PM = "I will put the <optimized_prompt> block first.\n\n" + WITHBLOCK
+case_allow("allows a valid block preceded by a prose mention of <optimized_prompt>", [U(FOLLOW), A(PM)], last=PM)
 case_block("blocks a human prompt that merely quotes [Subagent hand-back] mid-message", [U(QUOTE + " Then list what to fix first, in order, and say which fixes are safe to apply without asking me."), A(NOBLOCK)])
 case_block("blocks a 30-word follow-up that opens with 'also' (continuation no longer skips at 25+ words)",
            [U("also use haiku for the pushes and keep the closeout to two lines, and do not touch the writing hook or the settings file while you work on this"), A(NOBLOCK)])

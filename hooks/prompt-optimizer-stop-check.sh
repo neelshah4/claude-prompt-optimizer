@@ -274,7 +274,27 @@ try:
     # with "also" or "now make" carries new instructions and fires.
     continuation = bool(re.search(CONT_RE, low)) and words < 25
 
-    block_present = ("optimized_prompt" in assistant_text) or ("optimized_prompt" in last_assistant_msg)
+    # A bare mention of "optimized_prompt" no longer satisfies the gate: it needs a closed
+    # <optimized_prompt>...</optimized_prompt> element whose top-level children include the
+    # era-independent core of the closed schema (SKILL.md Output Rule): role, inputs,
+    # instructions. <eval> and <assumptions> are NOT required here and foreign tags are not
+    # rejected: the gate set labels blocks by era (suggested_goal and no-eval blocks were valid
+    # before 2026-09-28 / 2026-11-14), so a stricter check scores as false blocks on history.
+    PO_REQ = ("role", "inputs", "instructions")
+    
+    def has_valid_block(text):
+        # A real block is the INNERMOST <optimized_prompt>...</optimized_prompt> element (so a prose
+        # mention of the tag earlier in the turn cannot swallow it) whose schema children appear as
+        # proper open/close pairs. Other angle-bracket text (placeholders such as <name>, generics
+        # such as List<String>) is content. Grader finding 2026-11-20: the earlier depth counter
+        # treated placeholders as open tags and false-blocked 3 of 549 valid real blocks.
+        for m in re.finditer(r"<optimized_prompt>((?:(?!<optimized_prompt>).)*?)</optimized_prompt>", text or "", re.S):
+            inner = m.group(1)
+            if all(re.search(r"<%s>.*?</%s>" % (t, t), inner, re.S) for t in PO_REQ):
+                return True
+        return False
+
+    block_present = has_valid_block(assistant_text) or has_valid_block(last_assistant_msg)
     lam_ends_q = last_assistant_msg.strip().endswith("?")
     tool_terminal_defer = last_tool_use_name in TERMINAL_TOOLS
 
@@ -290,7 +310,7 @@ try:
 
     if should_block:
         reason = ("This turn's human-typed prompt looks like a task (attachment-led, a pasted plan, or 25 words or more) but no "
-                  "optimized_prompt block was produced. Prepend the optimized_prompt "
+                  "valid optimized_prompt block (closed schema: role, inputs, instructions, assumptions, eval) was produced. Prepend the optimized_prompt "
                   "block per the prompt-optimizer skill at the top of your continued response — "
                   "or, if a skip category genuinely applies, state which one in one line and finish.")
         # Compact separators to match target-artifacts.md §B verbatim ({"decision":"block",...}).
