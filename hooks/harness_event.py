@@ -40,7 +40,21 @@ MARKERS = (
     "<local-command-stdout>",
     "<local-command-caveat>",
     "<system-reminder>",
+    # 2026-11-27: cross-session (peer) messages and side-session hand-offs. Transcripts of 11-21 show
+    # the nudge firing on isMeta peer entries; these openings were not listed.
+    "<cross-session-message",
+    "Background (from the session that started this one)",
 )
+
+
+def payload_is_event(data):
+    """A UserPromptSubmit payload that names its own origin as non-human (peer, task-notification)."""
+    try:
+        org = data.get("origin") if isinstance(data, dict) else None
+        kind = org.get("kind") if isinstance(org, dict) else org
+        return kind in ("peer", "task-notification") or bool(isinstance(data, dict) and data.get("isCompactSummary"))
+    except Exception:
+        return False
 
 
 def is_harness_event(prompt):
@@ -56,7 +70,7 @@ def _extract():
         prompt = data.get("prompt", "") if isinstance(data, dict) else ""
     except Exception:
         return 0
-    if is_harness_event(prompt):
+    if is_harness_event(prompt) or payload_is_event(data):
         return 10
     try:
         print(prompt)
@@ -71,7 +85,7 @@ def _main():
     try:
         data = json.loads(sys.stdin.read())
         prompt = data.get("prompt", "") if isinstance(data, dict) else ""
-        return 0 if is_harness_event(prompt) else 1
+        return 0 if (is_harness_event(prompt) or payload_is_event(data)) else 1
     except Exception:
         return 1
 

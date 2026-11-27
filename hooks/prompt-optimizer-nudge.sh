@@ -54,10 +54,6 @@ fi
 # 15 words, so a notification payload always tripped it and the nudge fired on turns the user
 # never spoke in — observed twice on 2026-08-01. Matched on harness-emitted markers, never on
 # text shape, so a human quoting one of these strings in a real request still fires.
-case "$prompt" in
-  *"[SYSTEM NOTIFICATION - NOT USER INPUT]"*|*"<task-notification>"*|*"<local-command-stdout>"*)
-    exit 0 ;;
-esac
 
 # --- Step (a0b): other non-human turns (2026-11-14): subagent hand-back, compaction or
 # continuation summary, scheduled-task start, <side-sessions-event>, <ci-monitor-event>.
@@ -69,6 +65,8 @@ esac
 # genuine only as their own message; no live payload of those two was found in 60 transcripts.
 head=$(printf '%s' "$prompt" | head -c 400 | tr -d '\r' | awk 'NF{f=1} f' | sed 's/^[[:space:]]*//')
 case "$head" in
+  "[SYSTEM NOTIFICATION - NOT USER INPUT]"*|"<task-notification>"*|"<local-command-stdout>"*|\
+  "<cross-session-message"*|"Background (from the session that started this one)"*|\
   "Another Claude session sent a message"*|"<agent-message from="*|\
   "This session is being continued from a previous conversation"*|\
   "<scheduled-task"*|"<side-sessions-event"*|"<ci-monitor-event"*)

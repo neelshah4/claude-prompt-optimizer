@@ -38,18 +38,25 @@ SCHED = ('<scheduled-task name="nightly-report" file="/path/to/'
          'present to answer questions. Execute autonomously, write the report and build the missing outputs.')
 SIDE = '<side-sessions-event>\nA session you started ended its turn. Review the result and continue with the next step of the plan.\n</side-sessions-event>'
 CI = '<ci-monitor-event>\nCheck run "tests" failed on pull request 12. Review the log, debug the failure and push a fix.\n</ci-monitor-event>'
+XSESS = '<cross-session-message from="peer-1">Please review the plan and write the summary of the findings for the next step.</cross-session-message>'
+BACKG = 'Background (from the session that started this one): review the failing tests, debug the cause and write up a fix for the next step.'
 TASKN = ('<task-notification>\n<task-id>b5lizkowz</task-id>\n<status>completed</status>\n<summary>Background command '
          '"Run the project selftest" completed, please review the output and write the summary</summary>\n</task-notification>')
 
 print("nudge hook")
 for name, p in [("subagent hand-back", PEER), ("compaction summary", COMPACT), ("scheduled-task start", SCHED),
                 ("side-sessions-event", SIDE), ("ci-monitor-event", CI), ("task-notification", TASKN),
+                ("cross-session-message", XSESS), ("side-session hand-off", BACKG),
                 ("hand-back behind a leading blank line", "\n  \n" + PEER)]:
     rc, out = nudge(p)
     check("nudge silent on " + name, rc == 0 and out == "", "rc=%s out=%r" % (rc, out[:60]))
 
 QUOTE = ("Here is what the last agent returned, quoted: [Subagent hand-back] Builder A is finished. "
          "Please review whether that report is accurate and write me a short critique of it.")
+# Markers that opened a prompt anywhere in 2026.11.20 and earlier now match only at the opening.
+for tag in ("[SYSTEM NOTIFICATION - NOT USER INPUT]", "<task-notification>", "<local-command-stdout>"):
+    rc, out = nudge("Please review this: " + tag + " is how the harness writes it, and write up what it means for the hook.")
+    check("nudge injects on a human prompt that quotes " + tag + " mid-message", rc == 0 and out != "", "rc=%s out=%r" % (rc, out[:60]))
 rc, out = nudge(QUOTE)
 check("nudge injects on a human prompt that quotes [Subagent hand-back] mid-message", rc == 0 and out != "")
 rc, out = nudge("Please review this: <scheduled-task name=x> is how the harness opens a run, and write up what it means.")

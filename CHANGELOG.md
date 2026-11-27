@@ -5,6 +5,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning is calendar-based (`YYYY.M.D`), matching the skill's own dated version
 string rather than imposing a semantic version it does not have.
 
+## [2026.11.27] - 2026-11-27
+
+### Changed
+- The nudge hook stays silent on two more non-human openings: a cross-session message from a peer session (`<cross-session-message`) and a side-session hand-off (`Background (from the session that started this one)`). `hooks/harness_event.py` also treats a payload whose own origin is `peer` or `task-notification`, or that is flagged as a compaction summary, as non-human.
+- The `[SYSTEM NOTIFICATION - NOT USER INPUT]`, `<task-notification>` and `<local-command-stdout>` markers match only at the opening of a prompt. They previously matched anywhere, so a person quoting one mid-message got no nudge.
+- Fixtures: new nudge cases for the two new openings, and cases confirming that a human prompt quoting each of the three legacy markers mid-message still injects.
+
 ## [2026.11.20] - 2026-11-20
 
 ### Changed

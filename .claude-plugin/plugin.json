@@ -1,6 +1,6 @@
 {
   "name": "prompt-optimizer",
-  "version": "2026.11.20",
+  "version": "2026.11.27",
   "description": "Sharpens a request into a structured prompt block before Claude produces content. Fires on substantive turns, skips trivia, and ships the enforcement hooks.",
   "author": {
     "name": "Neel Shah, MD, MSc"

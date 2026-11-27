@@ -5,6 +5,14 @@ disclosure). Entries are historical records, reproduced verbatim: they describe 
 past pass did and are NOT current instructions. Do not edit a past entry to match
 current behavior.
 
+## Nudge hook: peer and side-session openings, opening-only legacy markers (2026-11-27, v2026.11.27)
+
+HOOK AUDIT (2026-11-27): transcripts showed the nudge firing on cross-session peer messages and side-session
+     hand-offs, which the marker list did not cover. `hooks/harness_event.py` gains the two openings and a payload-origin
+     check (peer or task-notification origin, compaction-summary flag); the three markers that matched anywhere in a prompt
+     (system notification, task notification, local-command output) now match only at the opening, so a person quoting one
+     mid-message still gets the nudge. No change to the skill body, the skip list or the Stop hook.
+
 ## Closeout rule follows standing instructions; one receipt line (2026-11-16, v2026.11.16)
 
 SKILL AUDIT (2026-11-16): Rule 8 said "1–2 sentences, always" and contradicted a standing three-line closeout
